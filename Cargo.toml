@@ -1,0 +1,9 @@
+[package]
+name = "embive"
+version = "0.1.0"
+authors = ["Daniel Stuart <daniel.stuart14@gmail.com>"]
+repository = "https://github.com/danielstuart14/embive"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+[dependencies]

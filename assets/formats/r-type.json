@@ -1,0 +1,56 @@
+{
+  "elements": {
+    "network_order": false,
+    "inner_subtitles": true,
+    "field_position": true,
+    "field_length": true,
+    "wrap_line": true,
+    "start_symbol": true
+  },
+  "style": {
+    "background_color": "#FFFFFF",
+    "field_color": "#FFFFFF",
+    "text_color": "#000000",
+    "subtitle_color": "#000000",
+    "unit_width": 20,
+    "dyn_units": 3
+  },
+  "fields": [
+    {
+      "name": "opcode",
+      "length": 7,
+      "wrap": false,
+      "color": "#D6C7DE"
+    },
+    {
+      "name": "rd",
+      "length": 5,
+      "wrap": false,
+      "color": "#CDEBF3"
+    },
+    {
+      "name": "funct3",
+      "length": 3,
+      "wrap": false,
+      "color": "#F6BCAE"
+    },
+    {
+      "name": "rs1",
+      "length": 5,
+      "wrap": false,
+      "color": "#CBE5C0"
+    },
+    {
+      "name": "rs2",
+      "length": 5,
+      "wrap": false,
+      "color": "#CBE5C0"
+    },
+    {
+      "name": "funct7",
+      "length": 7,
+      "wrap": false,
+      "color": "#F6BCAE"
+    }
+  ]
+}

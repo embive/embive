@@ -1,0 +1,38 @@
+{
+  "elements": {
+    "network_order": false,
+    "inner_subtitles": true,
+    "field_position": true,
+    "field_length": true,
+    "wrap_line": true,
+    "start_symbol": true
+  },
+  "style": {
+    "background_color": "#FFFFFF",
+    "field_color": "#FFFFFF",
+    "text_color": "#000000",
+    "subtitle_color": "#000000",
+    "unit_width": 20,
+    "dyn_units": 3
+  },
+  "fields": [
+    {
+      "name": "opcode",
+      "length": 7,
+      "wrap": false,
+      "color": "#D6C7DE"
+    },
+    {
+      "name": "rd",
+      "length": 5,
+      "wrap": false,
+      "color": "#CDEBF3"
+    },
+    {
+      "name": "imm[31:12]",
+      "length": 20,
+      "wrap": false,
+      "color": "#FEFBC8"
+    }
+  ]
+}
