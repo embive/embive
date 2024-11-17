@@ -1,7 +1,7 @@
 [package]
 name = "embive"
 description = "A low-level sandboxing library for RISC-V bytecode"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Daniel Stuart <daniel.stuart14@gmail.com>"]
 repository = "https://github.com/embive/embive"
 documentation = "https://docs.rs/embive"
@@ -10,6 +10,7 @@ categories = ["no-std", "virtualization", "embedded"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
 rust-version = "1.81"
+readme = "README.md"
 
 [dependencies]
 
