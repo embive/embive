@@ -12,27 +12,25 @@ pub struct Jal {
 }
 
 impl Opcode for Jal {
-    fn decode(data: u32) -> Result<impl Instruction, EmbiveError> {
-        Ok(Self {
+    #[inline(always)]
+    fn decode(data: u32) -> impl Instruction {
+        Self {
             ty: TypeJ::from(data),
-        })
+        }
     }
 }
 
 impl Instruction for Jal {
+    #[inline(always)]
     fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
-        // Get the current program counter.
-        let pc = *engine.pc_mut();
-
         // Load pc + instruction size into the destination register.
         if self.ty.rd != 0 {
-            let reg = engine.register_mut(self.ty.rd)?;
-            *reg = pc + INSTRUCTION_SIZE;
+            let reg = engine.registers.get_mut(self.ty.rd)?;
+            *reg = engine.pc.wrapping_add(INSTRUCTION_SIZE) as i32;
         }
 
         // Set the program counter to the new address.
-        let pc = engine.pc_mut();
-        *pc += self.ty.imm as i32;
+        engine.pc = engine.pc.wrapping_add_signed(self.ty.imm);
 
         // Continue execution
         Ok(true)
@@ -45,15 +43,15 @@ mod tests {
 
     #[test]
     fn test_jal() {
-        let mut engine = Engine::new(&[], &mut []).unwrap();
-        *engine.pc_mut() = 0x1;
+        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        engine.pc = 0x1;
         let jal = Jal {
             ty: TypeJ { rd: 1, imm: 0x1000 },
         };
 
         let result = jal.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.register_mut(1).unwrap(), 0x5);
-        assert_eq!(*engine.pc_mut(), 0x1 + 0x1000);
+        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
+        assert_eq!(engine.pc, 0x1 + 0x1000);
     }
 }

@@ -11,18 +11,22 @@ pub struct MiscMem {
 }
 
 impl Opcode for MiscMem {
-    fn decode(data: u32) -> Result<impl Instruction, EmbiveError> {
-        Ok(Self {
+    #[inline(always)]
+    fn decode(data: u32) -> impl Instruction {
+        Self {
             _ty: TypeI::from(data),
-        })
+        }
     }
 }
 
 impl Instruction for MiscMem {
+    #[inline(always)]
     fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+        // Fencing isn't applicable to this implementation.
+        // This is a nop.
+
         // Go to next instruction
-        let pc = engine.pc_mut();
-        *pc += INSTRUCTION_SIZE;
+        engine.pc = engine.pc.wrapping_add(INSTRUCTION_SIZE);
 
         // Continue execution
         Ok(true)
@@ -35,8 +39,8 @@ mod tests {
 
     #[test]
     fn test_misc_mem() {
-        let mut engine = Engine::new(&[], &mut []).unwrap();
-        *engine.pc_mut() = 0x1;
+        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        engine.pc = 0x1;
         let misc_mem = MiscMem {
             _ty: TypeI {
                 rd: 0,
@@ -48,6 +52,6 @@ mod tests {
 
         let result = misc_mem.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.pc_mut(), 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
     }
 }

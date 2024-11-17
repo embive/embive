@@ -15,39 +15,30 @@ pub struct Store {
 }
 
 impl Opcode for Store {
-    fn decode(data: u32) -> Result<impl Instruction, EmbiveError> {
-        Ok(Self {
+    #[inline(always)]
+    fn decode(data: u32) -> impl Instruction {
+        Self {
             ty: TypeS::from(data),
-        })
+        }
     }
 }
 
 impl Instruction for Store {
+    #[inline(always)]
     fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
-        let rs1 = engine.register(self.ty.rs1)?;
-        let rs2 = engine.register(self.ty.rs2)?;
+        let rs1 = engine.registers.get(self.ty.rs1)?;
+        let rs2 = engine.registers.get(self.ty.rs2)?;
 
+        let address = (rs1 as u32).wrapping_add_signed(self.ty.imm);
         match self.ty.funct3 {
-            SB_FUNCT3 => {
-                let address = rs1 + self.ty.imm as i32;
-                engine.store(address, (rs2 as u8).to_le_bytes())?;
-            }
-            SH_FUNCT3 => {
-                let address = rs1 + self.ty.imm as i32;
-                engine.store(address, (rs2 as u16).to_le_bytes())?;
-            }
-            SW_FUNCT3 => {
-                let address = rs1 + self.ty.imm as i32;
-                engine.store(address, rs2.to_le_bytes())?;
-            }
-            _ => {
-                return Err(EmbiveError::InvalidInstruction);
-            }
+            SB_FUNCT3 => engine.memory.store(address, (rs2 as u8).to_le_bytes())?,
+            SH_FUNCT3 => engine.memory.store(address, (rs2 as u16).to_le_bytes())?,
+            SW_FUNCT3 => engine.memory.store(address, rs2.to_le_bytes())?,
+            _ => return Err(EmbiveError::InvalidInstruction),
         }
 
         // Go to next instruction
-        let pc = engine.pc_mut();
-        *pc += INSTRUCTION_SIZE;
+        engine.pc = engine.pc.wrapping_add(INSTRUCTION_SIZE);
 
         Ok(true)
     }
@@ -56,12 +47,16 @@ impl Instruction for Store {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::MEMORY_OFFSET;
+    use crate::memory::RAM_OFFSET;
+
+    fn get_ram_addr() -> i32 {
+        RAM_OFFSET as i32
+    }
 
     #[test]
     fn test_sb() {
         let mut memory = [0; 2];
-        let mut engine = Engine::new(&[], &mut memory).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x1,
@@ -71,19 +66,19 @@ mod tests {
             },
         };
 
-        *engine.register_mut(1).unwrap() = MEMORY_OFFSET;
-        *engine.register_mut(2).unwrap() = 0x2;
+        *engine.registers.get_mut(1).unwrap() = get_ram_addr();
+        *engine.registers.get_mut(2).unwrap() = 0x2;
 
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.pc_mut(), INSTRUCTION_SIZE);
+        assert_eq!(engine.pc, INSTRUCTION_SIZE);
         assert_eq!(memory[1], 0x2);
     }
 
     #[test]
     fn test_sh() {
         let mut memory = [0; 4];
-        let mut engine = Engine::new(&[], &mut memory).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x2,
@@ -93,19 +88,19 @@ mod tests {
             },
         };
 
-        *engine.register_mut(1).unwrap() = MEMORY_OFFSET;
-        *engine.register_mut(2).unwrap() = 0x1234;
+        *engine.registers.get_mut(1).unwrap() = get_ram_addr();
+        *engine.registers.get_mut(2).unwrap() = 0x1234;
 
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.pc_mut(), INSTRUCTION_SIZE);
+        assert_eq!(engine.pc, INSTRUCTION_SIZE);
         assert_eq!(memory[2..4], [0x34, 0x12]);
     }
 
     #[test]
     fn test_sw() {
         let mut memory = [0; 4];
-        let mut engine = Engine::new(&[], &mut memory).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x0,
@@ -115,12 +110,12 @@ mod tests {
             },
         };
 
-        *engine.register_mut(1).unwrap() = MEMORY_OFFSET;
-        *engine.register_mut(2).unwrap() = 0x12345678;
+        *engine.registers.get_mut(1).unwrap() = get_ram_addr();
+        *engine.registers.get_mut(2).unwrap() = 0x12345678;
 
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.pc_mut(), INSTRUCTION_SIZE);
+        assert_eq!(engine.pc, INSTRUCTION_SIZE);
         assert_eq!(memory[0..4], [0x78, 0x56, 0x34, 0x12]);
     }
 }

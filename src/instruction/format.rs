@@ -5,21 +5,20 @@
 #[doc = include_str!("../../assets/formats/r-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeR {
-    pub rd: u8,
-    pub funct3: u8,
-    pub rs1: u8,
-    pub rs2: u8,
-    pub funct7: u8,
+    pub rd: usize,
+    pub rs1: usize,
+    pub rs2: usize,
+    pub funct10: u16,
 }
 
 impl From<u32> for TypeR {
+    #[inline(always)]
     fn from(inst: u32) -> Self {
         TypeR {
-            rd: ((inst >> 7) & 0b1_1111) as u8,
-            funct3: ((inst >> 12) & 0b111) as u8,
-            rs1: ((inst >> 15) & 0b1_1111) as u8,
-            rs2: ((inst >> 20) & 0b1_1111) as u8,
-            funct7: ((inst >> 25) & 0b111_1111) as u8,
+            rd: ((inst >> 7) & 0b1_1111) as usize,
+            rs1: ((inst >> 15) & 0b1_1111) as usize,
+            rs2: ((inst >> 20) & 0b1_1111) as usize,
+            funct10: (((inst >> 22) & (0b111_1111 << 3)) | ((inst >> 12) & 0b111)) as u16,
         }
     }
 }
@@ -28,19 +27,20 @@ impl From<u32> for TypeR {
 #[doc = include_str!("../../assets/formats/i-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeI {
-    pub rd: u8,
+    pub rd: usize,
+    pub rs1: usize,
+    pub imm: i32,
     pub funct3: u8,
-    pub rs1: u8,
-    pub imm: i16,
 }
 
 impl From<u32> for TypeI {
+    #[inline(always)]
     fn from(inst: u32) -> Self {
         TypeI {
-            rd: ((inst >> 7) & 0b1_1111) as u8,
+            rd: ((inst >> 7) & 0b1_1111) as usize,
             funct3: ((inst >> 12) & 0b111) as u8,
-            rs1: ((inst >> 15) & 0b1_1111) as u8,
-            imm: ((inst & (0b1111_1111_1111 << 20)) as i32 >> 20) as i16,
+            rs1: ((inst >> 15) & 0b1_1111) as usize,
+            imm: ((inst & (0b1111_1111_1111 << 20)) as i32 >> 20) as i32,
         }
     }
 }
@@ -49,20 +49,20 @@ impl From<u32> for TypeI {
 #[doc = include_str!("../../assets/formats/s-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeS {
-    pub imm: i16,
+    pub rs1: usize,
+    pub rs2: usize,
+    pub imm: i32,
     pub funct3: u8,
-    pub rs1: u8,
-    pub rs2: u8,
 }
 
 impl From<u32> for TypeS {
+    #[inline(always)]
     fn from(inst: u32) -> Self {
         TypeS {
-            imm: (((inst & (0b111_1111 << 25)) | ((inst & (0b1_1111 << 7)) << 13)) as i32 >> 20)
-                as i16,
+            imm: ((inst & (0b111_1111 << 25)) | ((inst & (0b1_1111 << 7)) << 13)) as i32 >> 20,
             funct3: ((inst >> 12) & 0b111) as u8,
-            rs1: ((inst >> 15) & 0b1_1111) as u8,
-            rs2: ((inst >> 20) & 0b1_1111) as u8,
+            rs1: ((inst >> 15) & 0b1_1111) as usize,
+            rs2: ((inst >> 20) & 0b1_1111) as usize,
         }
     }
 }
@@ -71,23 +71,24 @@ impl From<u32> for TypeS {
 #[doc = include_str!("../../assets/formats/b-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeB {
-    pub imm: i16,
+    pub rs1: usize,
+    pub rs2: usize,
+    pub imm: i32,
     pub funct3: u8,
-    pub rs1: u8,
-    pub rs2: u8,
 }
 
 impl From<u32> for TypeB {
+    #[inline(always)]
     fn from(inst: u32) -> Self {
         TypeB {
-            imm: (((inst & (0b1 << 31))
+            imm: ((inst & (0b1 << 31))
                 | ((inst & (0b1 << 7)) << 23)
                 | ((inst & (0b11_1111 << 25)) >> 1)
                 | ((inst & (0b1111 << 8)) << 12)) as i32
-                >> 19) as i16,
+                >> 19,
             funct3: ((inst >> 12) & 0b111) as u8,
-            rs1: ((inst >> 15) & 0b1_1111) as u8,
-            rs2: ((inst >> 20) & 0b1_1111) as u8,
+            rs1: ((inst >> 15) & 0b1_1111) as usize,
+            rs2: ((inst >> 20) & 0b1_1111) as usize,
         }
     }
 }
@@ -96,14 +97,15 @@ impl From<u32> for TypeB {
 #[doc = include_str!("../../assets/formats/u-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeU {
-    pub rd: u8,
     pub imm: i32,
+    pub rd: usize,
 }
 
 impl From<u32> for TypeU {
+    #[inline(always)]
     fn from(inst: u32) -> Self {
         TypeU {
-            rd: ((inst >> 7) & 0b11111) as u8,
+            rd: ((inst >> 7) & 0b11111) as usize,
             imm: (inst & (0b1111_1111_1111_1111_1111 << 12)) as i32,
         }
     }
@@ -113,14 +115,15 @@ impl From<u32> for TypeU {
 #[doc = include_str!("../../assets/formats/j-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeJ {
-    pub rd: u8,
     pub imm: i32,
+    pub rd: usize,
 }
 
 impl From<u32> for TypeJ {
+    #[inline(always)]
     fn from(inst: u32) -> Self {
         TypeJ {
-            rd: ((inst >> 7) & 0b1_1111) as u8,
+            rd: ((inst >> 7) & 0b1_1111) as usize,
             imm: ((inst & (0b1 << 31))
                 | ((inst & (0b1111_1111 << 12)) << 11)
                 | ((inst & (0b1 << 20)) << 2)
@@ -140,10 +143,9 @@ mod tests {
         let parsed = TypeR::from(inst);
 
         assert_eq!(parsed.rd, 1);
-        assert_eq!(parsed.funct3, 5);
         assert_eq!(parsed.rs1, 4);
         assert_eq!(parsed.rs2, 3);
-        assert_eq!(parsed.funct7, 32);
+        assert_eq!(parsed.funct10, (32 << 3) | 5);
     }
 
     #[test]

@@ -1,74 +1,87 @@
-//! Virtual RISC-V engine.
-//! A simple virtual RISC-V engine that can run RISC-V bytecode.
+//! Engine Module
 
-use core::fmt::Debug;
+#[cfg(feature = "start_at_ram")]
+use memory::RAM_OFFSET;
+
+use crate::memory::Memory;
+use crate::register::{Register, Registers};
 use crate::error::EmbiveError;
 use crate::instruction::decode_and_execute;
 
-/// Number of registers in the virtual RISC-V engine.
-pub(crate) const REGISTER_COUNT: usize = 32;
+/// Number of syscall arguments
+pub const SYSCALL_ARGS: usize = 6;
 
-/// Memory address offset for the virtual RISC-V engine.
-pub(crate) const MEMORY_OFFSET: i32 = 0x20000000;
+/// System call function signature
+/// 
+/// This function is called by the `ecall` instruction. Check [syscall(2)](https://man7.org/linux/man-pages/man2/syscall.2.html).
+/// The following RISC-V registers are used for system calls:
+/// - `a7`: System call number.
+/// - `a0` to `a5`: System call arguments.
+/// - `a0` and `a1`: Return values.
+///
+/// Arguments:
+/// - `nr`: System call number.
+/// - `args`: System call arguments, up to [`SYSCALL_ARGS`].
+/// - `memory`: The virtual RISC-V engine memory.
+///
+/// Returns:
+/// - `(i32, i32)`: Return values.
+pub type SyscallFn = fn(nr: i32, args: [i32; SYSCALL_ARGS], memory: &mut Memory) -> (i32, i32);
 
-/// Stack pointer register index.
-pub(crate) const SP: usize = 2;
-
-/// Generate initial register values.
-/// The stack pointer (x2) is set to the end of memory, and all other registers are set to 0.
-fn initial_registers(memory_size: usize) -> [i32; REGISTER_COUNT] {
-    let mut registers = [0; REGISTER_COUNT];
-
-    // Set the stack pointer to the top of the stack
-    registers[SP] = MEMORY_OFFSET + memory_size as i32;
-    registers
-}
-
-/// The virtual RISC-V engine.
+/// Embive Engine Struct
+#[derive(Debug)]
 pub struct Engine<'a> {
-    pc: i32,
-    registers: [i32; REGISTER_COUNT],
-    memory: &'a mut [u8],
-    program: &'a [u8],
-}
-
-impl Debug for Engine<'_> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("Engine")
-            .field("pc", &self.pc)
-            .field("registers", &self.registers)
-            .field("memory", &self.memory.len())
-            .field("program", &self.program.len())
-            .finish()
-    }
+    /// Program counter.
+    pub(crate) pc: u32,
+    /// CPU Registers.
+    pub(crate) registers: Registers,
+    /// System Memory (program + RAM).
+    pub(crate) memory: Memory<'a>,
+    /// System call function (Called by `ecall` instruction).
+    syscall_fn: Option<SyscallFn>,
 }
 
 impl<'a> Engine<'a> {
     /// Create a new virtual RISC-V engine.
     ///
     /// Arguments:
-    /// - `program`: Program to run, `u8` slice. RISC-V bytecode mapped to address 0x00000000 of the virtual processor.
-    /// - `memory`: Memory buffer, mutable `u8` slice. Internally mapped to address `MEMORY_OFFSET` of the virtual processor.
-    pub fn new(program: &'a [u8], memory: &'a mut [u8]) -> Result<Engine<'a>, EmbiveError> {
+    /// - `code`: Code buffer, `u8` slice.
+    /// - `ram`: RAM buffer, mutable `u8` slice.
+    /// - `syscall_fn`: Optional function to handle system calls.
+    pub fn new(
+        code: &'a [u8],
+        ram: &'a mut [u8],
+        syscall_fn: Option<SyscallFn>,
+    ) -> Result<Engine<'a>, EmbiveError> {
+        let memory = Memory::new(code, ram);
+
         Ok(Engine {
             pc: 0,
-            registers: initial_registers(memory.len()),
+            registers: Registers::new(&memory),
             memory,
-            program,
+            syscall_fn,
         })
     }
 
     /// Reset the virtual RISC-V engine:
-    /// - Program counter is reset to 0.
+    /// - Program counter is reset to 0. (Or [`crate::memory::RAM_OFFSET`] if the `start_at_ram` feature is enabled).
     /// - Registers are reset to 0.
     /// - Stack pointer (x2) is set to the top of the stack.
     pub fn reset(&mut self) {
-        self.pc = 0;
-        self.registers = initial_registers(self.memory.len());
+        #[cfg(feature = "start_at_ram")]
+        {
+            self.pc = RAM_OFFSET;
+        }
+        #[cfg(not(feature = "start_at_ram"))]
+        {
+            self.pc = 0;
+        }
+
+        self.registers.reset(&self.memory);
     }
 
     /// Run the virtual RISC-V engine from the start, until a halt instruction is reached.
-    /// The engine is reset before execution (by implicitly calling the `reset` method).
+    /// The engine is reset before execution (by implicitly calling [`Engine::reset`]).
     ///
     /// Returns:
     /// - `Ok`: Executed successfully (halt was reached).
@@ -92,6 +105,7 @@ impl<'a> Engine<'a> {
     ///     - `True`: Should continue execution.
     ///     - `False`: Should halt.
     /// - `Err(EmbiveError)`: Failed to execute.
+    #[inline]
     pub fn step(&mut self) -> Result<bool, EmbiveError> {
         // Fetch next instruction
         let data = self.fetch()?;
@@ -100,108 +114,113 @@ impl<'a> Engine<'a> {
         decode_and_execute(self, data)
     }
 
-    /// Read an engine register.
-    ///
-    /// Arguments:
-    /// - `index`: The index of the register (from 0 to `REGISTER_COUNT`).
-    ///
-    /// Returns:
-    /// - `Ok(i32)`: The value of the register.
-    /// - `Err(EmbiveError)`: The register index is out of bounds.
-    pub fn register(&self, index: u8) -> Result<i32, EmbiveError> {
-        self.registers
-            .get(index as usize)
-            .copied()
-            .ok_or(EmbiveError::InvalidRegister)
-    }
-
-    /// Get a mutable reference to an engine register.
-    ///
-    /// Arguments:
-    /// - `index`: The index of the register (from 1 to `REGISTER_COUNT`).
-    ///     - Register 0 is hardwired to 0, so it is not mutable.
-    ///
-    /// Returns:
-    /// - `Ok(&mut i32)`: Mutable reference to the register.
-    /// - `Err(EmbiveError)`: The register index is out of bounds.
-    pub fn register_mut(&mut self, index: u8) -> Result<&mut i32, EmbiveError> {
-        // Register 0 is hardwired to 0
-        self.registers[1..REGISTER_COUNT]
-            .get_mut(index as usize - 1)
-            .ok_or(EmbiveError::InvalidRegister)
-    }
-
-    /// Get a mutable reference to the program counter.
-    ///
-    /// Returns:
-    /// - `&mut i32`: Mutable reference to the program counter.
-    pub fn pc_mut(&mut self) -> &mut i32 {
-        &mut self.pc
-    }
-
-    /// Load `N` bytes from the memory address.
-    ///
-    /// Arguments:
-    /// - `address`: The memory address to get.
-    ///     - The address is offset by `MEMORY_OFFSET`.
-    ///
-    /// Returns:
-    /// - `Ok([u8; N])`: The bytes at the memory address.
-    /// - `Err(EmbiveError)`: The memory address and/or `N` are out of bounds.
-    pub fn load<const N: usize>(&self, address: i32) -> Result<[u8; N], EmbiveError> {
-        let data;
-        if address < MEMORY_OFFSET {
-            data = self
-                .program
-                .get(address as usize..address as usize + N)
-                .ok_or(EmbiveError::InvalidMemoryAddress)?;
-        } else {
-            let address = address - MEMORY_OFFSET;
-            data = self
-                .memory
-                .get(address as usize..address as usize + N)
-                .ok_or(EmbiveError::InvalidMemoryAddress)?;
-        }
-
-        // Unwrap is safe because the slice is guaranteed to have N elements.
-        Ok(data.try_into().unwrap())
-    }
-
-    /// Store `N` bytes to the memory address.
-    ///
-    /// Arguments:
-    /// - `address`: The memory address to store.
-    ///    - The address is offset by `MEMORY_OFFSET`.
-    /// - `data`: The bytes to store.
-    ///
-    /// Returns:
-    /// - `Ok(())`: The bytes were stored successfully.
-    /// - `Err(EmbiveError)`: The memory address and/or `N` are out of bounds.
-    pub fn store<const N: usize>(
-        &mut self,
-        address: i32,
-        data: [u8; N],
-    ) -> Result<(), EmbiveError> {
-        let address = address - MEMORY_OFFSET;
-        self.memory
-            .get_mut(address as usize..address as usize + N)
-            .ok_or(EmbiveError::InvalidMemoryAddress)?
-            // copy_from_slice is safe because the slice is guaranteed to have N elements.
-            .copy_from_slice(&data);
-
-        Ok(())
-    }
-
     /// Fetch the next instruction (raw) from the program counter.
     ///
     /// Returns:
     /// - `Ok(u32)`: The instruction (raw) that was fetched.
     /// - `Err(EmbiveError)`: The program counter is out of bounds.
+    #[inline]
     pub fn fetch(&mut self) -> Result<u32, EmbiveError> {
-        let inst = self
-            .program
-            .get(self.pc as usize..self.pc as usize + 4)
-            .ok_or(EmbiveError::InvalidProgramCounter)?;
-        Ok(u32::from_le_bytes(inst.try_into().unwrap()))
+        let data = self.memory.load::<4>(self.pc)?;
+        Ok(u32::from_le_bytes(data))
+    }
+
+    /// Get a reference to the registers.
+    pub fn registers(&self) -> &Registers {
+        &self.registers
+    }
+
+    /// Get a mutable reference to the registers.
+    pub fn registers_mut(&mut self) -> &mut Registers {
+        &mut self.registers
+    }
+
+    /// Get a reference to the memory.
+    pub fn memory(&self) -> &Memory<'a> {
+        &self.memory
+    }
+
+    /// Get a mutable reference to the memory.
+    pub fn memory_mut(&mut self) -> &mut Memory<'a> {
+        &mut self.memory
+    }
+
+    /// Get the program counter.
+    pub fn pc(&self) -> u32 {
+        self.pc
+    }
+
+    /// Set the program counter.
+    pub fn set_pc(&mut self, pc: u32) {
+        self.pc = pc;
+    }
+
+    /// Handle a system call.
+    /// The system call function is called with the system call number and arguments.
+    ///
+    /// Returns:
+    /// - `Ok(())`: Syscall executed.
+    /// - `Err(EmbiveError)`: Failed to execute the system call function.
+    ///     - System call function is not set.
+    #[inline(always)]
+    pub(crate) fn syscall(&mut self) -> Result<(), EmbiveError> {
+        if let Some(syscall_fn) = self.syscall_fn {
+            // Syscall Number
+            let nr = self.registers.inner[Register::A7 as usize];
+
+            // Syscall Arguments
+            let args = [
+                self.registers.inner[Register::A0 as usize],
+                self.registers.inner[Register::A1 as usize],
+                self.registers.inner[Register::A2 as usize],
+                self.registers.inner[Register::A3 as usize],
+                self.registers.inner[Register::A4 as usize],
+                self.registers.inner[Register::A5 as usize],
+            ];
+
+            // Call the syscall function
+            let (val, val2) = syscall_fn(nr, args, &mut self.memory);
+
+            // Set return values
+            self.registers.inner[Register::A0 as usize] = val;
+            self.registers.inner[Register::A1 as usize] = val2;
+
+            return Ok(());
+        }
+
+        // No syscall function set
+        Err(EmbiveError::NoSyscallFunction)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_reset() {
+        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        engine.reset();
+
+        #[cfg(feature = "start_at_ram")]
+        {
+            assert_eq!(engine.pc, RAM_OFFSET);
+        }
+
+        #[cfg(not(feature = "start_at_ram"))]
+        {
+            assert_eq!(engine.pc, 0);
+        }
+
+        assert_eq!(engine.registers.get(Register::Zero as usize).unwrap(), 0);
+        assert_eq!(engine.registers.get(Register::Ra as usize).unwrap(), 0);
+        assert_eq!(
+            engine.registers.get(Register::Sp as usize).unwrap(),
+            engine.memory().ram_end() as i32
+        );
+
+        for i in Register::Gp as usize..32 {
+            assert_eq!(engine.registers.get(i).unwrap(), 0);
+        }
     }
 }
