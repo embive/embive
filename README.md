@@ -1,4 +1,12 @@
-# Embive (Embedded RISC-V)
+# Embive (Embedded RISC-V) [![Latest Version]][crates.io] [![docs]][docs.rs] [![msrv]][Rust 1.81]
+
+[Latest Version]: https://img.shields.io/crates/v/embive.svg
+[crates.io]: https://crates.io/crates/embive
+[docs]: https://docs.rs/embive/badge.svg
+[docs.rs]: https://docs.rs/embive
+[msrv]: https://img.shields.io/crates/msrv/embive.svg?label=msrv&color=lightgray
+[Rust 1.81]: https://blog.rust-lang.org/2024/09/05/Rust-1.81.0.html
+
 Embive is a low-level sandboxing library focused on the embedding of untrusted code for constrained environments.  
 As it interprets RISC-V bytecode, multiple languages are supported out of the box by Embive (Rust, C, C++, Zig, TinyGo, etc.).  
 By default, Embive doesn’t require any external crate, dynamic memory allocation or the standard library (`no_std` and `no_alloc`).

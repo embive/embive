@@ -1,4 +1,4 @@
-//! # A crate for embedding RISC-V bytecode
+//! # Embive (Embedded RISC-V)
 //!
 //! Embive is a low-level sandboxing library focused on the embedding of untrusted code for constrained environments.  
 //! As it interprets RISC-V bytecode, multiple languages are supported out of the box by Embive (Rust, C, C++, Zig, TinyGo, etc.).  
