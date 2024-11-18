@@ -45,7 +45,7 @@ impl Instruction for Load {
         *rd = result;
 
         // Go to next instruction
-        engine.pc = engine.pc.wrapping_add(INSTRUCTION_SIZE);
+        engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
         Ok(true)
     }
@@ -54,7 +54,7 @@ impl Instruction for Load {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::RAM_OFFSET;
+    use crate::{engine::initial_program_counter, memory::RAM_OFFSET};
 
     fn get_ram_addr() -> i32 {
         RAM_OFFSET as i32
@@ -65,7 +65,7 @@ mod tests {
         let mut memory = [0x0; 2];
         memory[1] = 0x12;
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lb = Load {
             ty: TypeI {
                 rd: 1,
@@ -79,7 +79,10 @@ mod tests {
         let result = lb.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x12);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
@@ -87,7 +90,7 @@ mod tests {
         let mut memory = [0x0; 2];
         memory[1] = -0x12i8 as u8;
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lb = Load {
             ty: TypeI {
                 rd: 1,
@@ -101,7 +104,10 @@ mod tests {
         let result = lb.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -0x12);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
@@ -110,7 +116,7 @@ mod tests {
         memory[1] = 0x12;
         memory[2] = 0x34;
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lh = Load {
             ty: TypeI {
                 rd: 1,
@@ -124,14 +130,17 @@ mod tests {
         let result = lh.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x3412);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_lh_negative() {
         let mut memory = (-28098i16).to_le_bytes();
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lh = Load {
             ty: TypeI {
                 rd: 1,
@@ -145,7 +154,10 @@ mod tests {
         let result = lh.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -28098);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
@@ -156,7 +168,7 @@ mod tests {
         memory[3] = 0x56;
         memory[4] = 0x78;
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lw = Load {
             ty: TypeI {
                 rd: 1,
@@ -170,14 +182,17 @@ mod tests {
         let result = lw.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x78563412);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_lw_negative() {
         let mut memory = (-19088744i32).to_le_bytes();
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lw = Load {
             ty: TypeI {
                 rd: 1,
@@ -191,7 +206,10 @@ mod tests {
         let result = lw.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -19088744);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
@@ -199,7 +217,7 @@ mod tests {
         let mut memory = [0x0; 2];
         memory[1] = 0x12;
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lbu = Load {
             ty: TypeI {
                 rd: 1,
@@ -213,7 +231,10 @@ mod tests {
         let result = lbu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x12);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
@@ -221,7 +242,7 @@ mod tests {
         let mut memory = [0x0; 2];
         memory[1] = -0x12i8 as u8;
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lbu = Load {
             ty: TypeI {
                 rd: 1,
@@ -238,7 +259,10 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (-0x12i8 as u8) as i32
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
@@ -247,7 +271,7 @@ mod tests {
         memory[1] = 0x12;
         memory[2] = 0x34;
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lhu = Load {
             ty: TypeI {
                 rd: 1,
@@ -261,14 +285,17 @@ mod tests {
         let result = lhu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x3412);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_lhu_negative() {
         let mut memory = (-28098i16).to_le_bytes();
 
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let lhu = Load {
             ty: TypeI {
                 rd: 1,
@@ -285,6 +312,9 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (-28098i16 as u16) as i32
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 }

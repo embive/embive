@@ -59,7 +59,7 @@ impl Instruction for OpImm {
         }
 
         // Go to next instruction
-        engine.pc = engine.pc.wrapping_add(INSTRUCTION_SIZE);
+        engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
         // Continue execution
         Ok(true)
@@ -68,11 +68,13 @@ impl Instruction for OpImm {
 
 #[cfg(test)]
 mod tests {
+    use crate::engine::initial_program_counter;
+
     use super::*;
 
     #[test]
     fn test_addi() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let addi = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -86,12 +88,15 @@ mod tests {
         let result = addi.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1001);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_addi_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let addi = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -105,12 +110,15 @@ mod tests {
         let result = addi.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -999);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_xori() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let xori = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -124,12 +132,15 @@ mod tests {
         let result = xori.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x0234);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_xori_not() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let xori = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -143,12 +154,15 @@ mod tests {
         let result = xori.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), !0x1234);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_ori() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let ori = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -162,12 +176,15 @@ mod tests {
         let result = ori.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 | 0x1000);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_ori_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let ori = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -181,12 +198,15 @@ mod tests {
         let result = ori.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 | -0x1000);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_andi() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let andi = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -200,12 +220,15 @@ mod tests {
         let result = andi.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 & 0x1000);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slli() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let slli = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -219,12 +242,15 @@ mod tests {
         let result = slli.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 << 0b101);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_srli() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let srli = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -241,12 +267,15 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             ((-0x1234i32 as u32) >> 0b101) as i32
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_srai() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let srai = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -260,12 +289,15 @@ mod tests {
         let result = srai.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -0x1234 >> 0b101);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slti_lower() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let slti = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -279,12 +311,15 @@ mod tests {
         let result = slti.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slti_greater() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let slti = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -298,12 +333,15 @@ mod tests {
         let result = slti.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slti_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let slti = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -317,12 +355,15 @@ mod tests {
         let result = slti.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slti_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let slti = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -336,12 +377,15 @@ mod tests {
         let result = slti.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sltiu_lower() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let sltiu = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -355,12 +399,15 @@ mod tests {
         let result = sltiu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sltiu_greater() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let sltiu = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -374,12 +421,15 @@ mod tests {
         let result = sltiu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sltiu_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let sltiu = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -393,12 +443,15 @@ mod tests {
         let result = sltiu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sltiu_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let sltiu = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -412,6 +465,9 @@ mod tests {
         let result = sltiu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 }

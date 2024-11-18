@@ -18,3 +18,4 @@ readme = "README.md"
 default = ["m_extension"]
 m_extension = []
 start_at_ram = []
+instruction_limit = []

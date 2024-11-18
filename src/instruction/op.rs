@@ -104,7 +104,7 @@ impl Instruction for Op {
         }
 
         // Go to next instruction
-        engine.pc = engine.pc.wrapping_add(INSTRUCTION_SIZE);
+        engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
         Ok(true)
     }
@@ -112,11 +112,13 @@ impl Instruction for Op {
 
 #[cfg(test)]
 mod tests {
+    use crate::engine::initial_program_counter;
+
     use super::*;
 
     #[test]
     fn test_rd_0() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 0,
@@ -132,12 +134,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(start_regs, engine.registers);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_add() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -152,12 +157,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 30);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_add_wrapping() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -172,12 +180,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), i32::MIN);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sub() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -192,12 +203,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 10);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sub_wrapping() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -212,12 +226,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), i32::MAX);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_xor() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -233,12 +250,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b0110);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_or() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -254,12 +274,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b1110);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_and() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -275,12 +298,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b1000);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sll() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -296,12 +322,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b101000);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_srl() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -317,12 +346,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b10);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_srl_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -338,12 +370,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0xB);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sra() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -359,12 +394,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b10);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sra_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -380,12 +418,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0xFFFFFFFBu32 as i32);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slt_lower() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -401,12 +442,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slt_greater() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -422,12 +466,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slt_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -443,12 +490,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_slt_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -464,12 +514,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sltu_lower() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -485,12 +538,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sltu_greater() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -506,12 +562,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sltu_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -527,12 +586,15 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_sltu_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -548,13 +610,16 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mul() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -569,13 +634,16 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 200);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mul_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -590,13 +658,16 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 20);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mulh() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -614,13 +685,16 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (((i32::MAX as i64) * 2) >> 32) as i32
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mulhsu() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -638,13 +712,16 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (((i32::MAX as i64) * 2) >> 32) as u32 as i32
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mulhsu_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -662,13 +739,16 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             ((-2 * (u32::MAX as i64)) >> 32) as u32 as i32
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mulhu() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -686,13 +766,16 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (((i32::MAX as u64) * 2) >> 32) as i32
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_div() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -707,13 +790,16 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 2);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_div_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -728,13 +814,16 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -2);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_divu() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -752,13 +841,16 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (u32::MAX / 10) as i32
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_rem() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -773,13 +865,16 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_rem_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -794,13 +889,16 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -1);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_remu() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -815,6 +913,9 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), (u32::MAX % 1) as i32);
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 }

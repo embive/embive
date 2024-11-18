@@ -42,12 +42,14 @@ impl Instruction for Branch {
             _ => return Err(EmbiveError::InvalidInstruction),
         };
 
-        engine.pc = if branch {
+        engine.program_counter = if branch {
             // Branch to new address
-            engine.pc.wrapping_add_signed(self.ty.imm as i32)
+            engine
+                .program_counter
+                .wrapping_add_signed(self.ty.imm as i32)
         } else {
             // Go to next instruction
-            engine.pc.wrapping_add(INSTRUCTION_SIZE)
+            engine.program_counter.wrapping_add(INSTRUCTION_SIZE)
         };
 
         Ok(true)
@@ -60,8 +62,8 @@ mod tests {
 
     #[test]
     fn test_beq_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: -0x1000,
@@ -76,13 +78,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1u32.wrapping_sub(0x1000u32));
+        assert_eq!(engine.program_counter, 0x1u32.wrapping_sub(0x1000u32));
     }
 
     #[test]
     fn test_beq_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -97,13 +99,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1001);
+        assert_eq!(engine.program_counter, 0x1001);
     }
 
     #[test]
     fn test_beq_not_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -118,13 +120,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
     #[test]
     fn test_bne_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -139,13 +141,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
     #[test]
     fn test_bne_not_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -160,13 +162,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1001);
+        assert_eq!(engine.program_counter, 0x1001);
     }
 
     #[test]
     fn test_blt_less_than() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -181,13 +183,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1001);
+        assert_eq!(engine.program_counter, 0x1001);
     }
 
     #[test]
     fn test_blt_greater_than() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -202,13 +204,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
     #[test]
     fn test_bge_greater_than() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -223,13 +225,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1001);
+        assert_eq!(engine.program_counter, 0x1001);
     }
 
     #[test]
     fn test_bge_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -244,13 +246,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1001);
+        assert_eq!(engine.program_counter, 0x1001);
     }
 
     #[test]
     fn test_bge_less_than() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -265,13 +267,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
     #[test]
     fn test_bltu_less_than() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -286,13 +288,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1001);
+        assert_eq!(engine.program_counter, 0x1001);
     }
 
     #[test]
     fn test_bltu_greater_than() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -307,13 +309,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
     #[test]
     fn test_bgeu_greater_than() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -328,13 +330,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1001);
+        assert_eq!(engine.program_counter, 0x1001);
     }
 
     #[test]
     fn test_bgeu_equal() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -349,13 +351,13 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1001);
+        assert_eq!(engine.program_counter, 0x1001);
     }
 
     #[test]
     fn test_bgeu_less_than() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
                 imm: 0x1000,
@@ -370,6 +372,6 @@ mod tests {
 
         let result = branch.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 }

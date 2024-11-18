@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_invalid_instruction() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let result = super::decode_and_execute(&mut engine, 0);
         assert_eq!(result, Err(EmbiveError::InvalidInstruction));
     }

@@ -27,11 +27,11 @@ impl Instruction for Auipc {
             // rd = 0 means its a HINT instruction, just ignore it.
             // Load the immediate value + pc into the register.
             let reg = engine.registers.get_mut(self.ty.rd)?;
-            *reg = engine.pc.wrapping_add_signed(self.ty.imm) as i32;
+            *reg = engine.program_counter.wrapping_add_signed(self.ty.imm) as i32;
         }
 
         // Go to next instruction
-        engine.pc = engine.pc.wrapping_add(INSTRUCTION_SIZE);
+        engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
         // Continue execution
         Ok(true)
@@ -44,8 +44,8 @@ mod tests {
 
     #[test]
     fn test_auipc() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let auipc = Auipc {
             ty: TypeU { rd: 1, imm: 0x1000 },
         };
@@ -53,13 +53,13 @@ mod tests {
         let result = auipc.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1001);
-        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
     #[test]
     fn test_auipc_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let auipc = Auipc {
             ty: TypeU {
                 rd: 1,
@@ -70,6 +70,6 @@ mod tests {
         let result = auipc.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -0xfff);
-        assert_eq!(engine.pc, 0x1 + INSTRUCTION_SIZE);
+        assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 }

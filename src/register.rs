@@ -1,7 +1,7 @@
 //! Register Module
 
-use crate::memory::Memory;
 use crate::error::EmbiveError;
+use crate::memory::Memory;
 
 /// Number of registers in embive
 pub const REGISTER_COUNT: usize = 32;

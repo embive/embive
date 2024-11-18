@@ -41,7 +41,7 @@ impl Instruction for System {
         };
 
         // Go to next instruction
-        engine.pc = engine.pc.wrapping_add(INSTRUCTION_SIZE);
+        engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
         ret
     }
@@ -50,9 +50,9 @@ impl Instruction for System {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::engine::{initial_program_counter, Config, SyscallFn};
     use crate::memory::RAM_OFFSET;
     use crate::register::Register;
-    use crate::engine::SyscallFn;
 
     fn get_ram_addr() -> u32 {
         RAM_OFFSET
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn test_ebreak() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let misc_mem = System {
             ty: TypeI {
                 rd: 0,
@@ -72,12 +72,15 @@ mod tests {
 
         let result = misc_mem.execute(&mut engine);
         assert_eq!(result, Ok(false));
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 
     #[test]
     fn test_ecall_error() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         let misc_mem = System {
             ty: TypeI {
                 rd: 0,
@@ -105,7 +108,15 @@ mod tests {
         };
 
         let mut memory = [0; 4];
-        let mut engine = Engine::new(&[], &mut memory, Some(syscall_fn)).unwrap();
+        let mut engine = Engine::new(
+            &[],
+            &mut memory,
+            Config {
+                syscall_fn: Some(syscall_fn),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         *engine.registers.get_mut(Register::A0 as usize).unwrap() = 0;
         *engine.registers.get_mut(Register::A1 as usize).unwrap() = 1;
         *engine.registers.get_mut(Register::A2 as usize).unwrap() = 2;
@@ -134,6 +145,9 @@ mod tests {
                 .map(|v| i32::from_le_bytes(v)),
             Ok(-1)
         );
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
     }
 }

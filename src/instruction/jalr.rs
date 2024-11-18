@@ -29,11 +29,11 @@ impl Instruction for Jalr {
         // Load pc + instruction size into the destination register (if not unconditional).
         if self.ty.rd != 0 {
             let rd = engine.registers.get_mut(self.ty.rd)?;
-            *rd = engine.pc.wrapping_add(INSTRUCTION_SIZE) as i32;
+            *rd = engine.program_counter.wrapping_add(INSTRUCTION_SIZE) as i32;
         }
 
         // Set the program counter to the new address.
-        engine.pc = (rs1 as u32).wrapping_add_signed(self.ty.imm as i32);
+        engine.program_counter = (rs1 as u32).wrapping_add_signed(self.ty.imm as i32);
 
         // Continue execution
         Ok(true)
@@ -46,8 +46,8 @@ mod tests {
 
     #[test]
     fn test_jlr_negative() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let jalr = Jalr {
             ty: TypeI {
                 funct3: 0x0,
@@ -62,13 +62,13 @@ mod tests {
         let result = jalr.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
-        assert_eq!(engine.pc, (-0x2000i32 + -0x1000i32) as u32);
+        assert_eq!(engine.program_counter, (-0x2000i32 + -0x1000i32) as u32);
     }
 
     #[test]
     fn test_jlr() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let jalr = Jalr {
             ty: TypeI {
                 funct3: 0x0,
@@ -83,13 +83,13 @@ mod tests {
         let result = jalr.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
-        assert_eq!(engine.pc, 0x3000);
+        assert_eq!(engine.program_counter, 0x3000);
     }
 
     #[test]
     fn test_jlr_same_reg() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
-        engine.pc = 0x1;
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        engine.program_counter = 0x1;
         let jalr = Jalr {
             ty: TypeI {
                 funct3: 0x0,
@@ -104,6 +104,6 @@ mod tests {
         let result = jalr.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
-        assert_eq!(engine.pc, 0x3000);
+        assert_eq!(engine.program_counter, 0x3000);
     }
 }

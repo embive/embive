@@ -1,18 +1,18 @@
 //! Engine Module
 
 #[cfg(feature = "start_at_ram")]
-use memory::RAM_OFFSET;
+use crate::memory::RAM_OFFSET;
 
-use crate::memory::Memory;
-use crate::register::{Register, Registers};
 use crate::error::EmbiveError;
 use crate::instruction::decode_and_execute;
+use crate::memory::Memory;
+use crate::register::{Register, Registers};
 
 /// Number of syscall arguments
 pub const SYSCALL_ARGS: usize = 6;
 
 /// System call function signature
-/// 
+///
 /// This function is called by the `ecall` instruction. Check [syscall(2)](https://man7.org/linux/man-pages/man2/syscall.2.html).
 /// The following RISC-V registers are used for system calls:
 /// - `a7`: System call number.
@@ -28,82 +28,105 @@ pub const SYSCALL_ARGS: usize = 6;
 /// - `(i32, i32)`: Return values.
 pub type SyscallFn = fn(nr: i32, args: [i32; SYSCALL_ARGS], memory: &mut Memory) -> (i32, i32);
 
+/// Embive Engine Configuration Struct
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
+pub struct Config {
+    /// System call function (Called by `ecall` instruction).
+    pub syscall_fn: Option<SyscallFn>,
+    /// Instruction limit. Yield when the limit is reached (0 = No limit).
+    #[cfg(feature = "instruction_limit")]
+    pub instruction_limit: u32,
+}
+
 /// Embive Engine Struct
 #[derive(Debug)]
 pub struct Engine<'a> {
     /// Program counter.
-    pub(crate) pc: u32,
+    pub(crate) program_counter: u32,
     /// CPU Registers.
     pub(crate) registers: Registers,
     /// System Memory (program + RAM).
     pub(crate) memory: Memory<'a>,
-    /// System call function (Called by `ecall` instruction).
-    syscall_fn: Option<SyscallFn>,
+    /// Engine Configuration.
+    config: Config,
 }
 
 impl<'a> Engine<'a> {
-    /// Create a new virtual RISC-V engine.
+    /// Create a new embive engine.
     ///
     /// Arguments:
     /// - `code`: Code buffer, `u8` slice.
     /// - `ram`: RAM buffer, mutable `u8` slice.
-    /// - `syscall_fn`: Optional function to handle system calls.
+    /// - `config`: Engine configuration.
     pub fn new(
         code: &'a [u8],
         ram: &'a mut [u8],
-        syscall_fn: Option<SyscallFn>,
+        config: Config,
     ) -> Result<Engine<'a>, EmbiveError> {
         let memory = Memory::new(code, ram);
 
+        // Create the engine
         Ok(Engine {
-            pc: 0,
+            program_counter: initial_program_counter(),
             registers: Registers::new(&memory),
             memory,
-            syscall_fn,
+            config,
         })
     }
 
-    /// Reset the virtual RISC-V engine:
+    /// Reset the engine:
     /// - Program counter is reset to 0. (Or [`crate::memory::RAM_OFFSET`] if the `start_at_ram` feature is enabled).
     /// - Registers are reset to 0.
     /// - Stack pointer (x2) is set to the top of the stack.
+    /// - Instruction counter is reset to 0 (if the `instruction_limit` feature is enabled).
     pub fn reset(&mut self) {
-        #[cfg(feature = "start_at_ram")]
-        {
-            self.pc = RAM_OFFSET;
-        }
-        #[cfg(not(feature = "start_at_ram"))]
-        {
-            self.pc = 0;
-        }
-
+        self.program_counter = initial_program_counter();
         self.registers.reset(&self.memory);
     }
 
-    /// Run the virtual RISC-V engine from the start, until a halt instruction is reached.
-    /// The engine is reset before execution (by implicitly calling [`Engine::reset`]).
+    /// Run the engine
+    /// If the `instruction_limit` feature is enabled, the engine will yield when the limit is reached.
     ///
     /// Returns:
-    /// - `Ok`: Executed successfully (halt was reached).
-    /// - `Err(EmbiveError)`: Failed to execute.
-    pub fn run(&mut self) -> Result<(), EmbiveError> {
-        self.reset();
+    /// - `Ok(bool)`: Success, returns if should continue:
+    ///     - `True`: Continue running (yielded, call `run` again).
+    ///     - `False`: Stop running (halted, call `reset` prior to running again).
+    /// - `Err(EmbiveError)`: Failed to run.
+    pub fn run(&mut self) -> Result<bool, EmbiveError> {
+        #[cfg(feature = "instruction_limit")]
+        {
+            // Check if there is an instruction limit
+            if self.config.instruction_limit > 0 {
+                // Run the engine with an instruction limit
+                for _ in 0..self.config.instruction_limit {
+                    // Step through the program
+                    if !self.step()? {
+                        // Stop running
+                        return Ok(false);
+                    }
+                }
 
+                // Yield
+                return Ok(true);
+            }
+        }
+
+        // No instruction limit
         loop {
             // Step through the program
             if !self.step()? {
-                // Halt execution
-                return Ok(());
+                // Stop running
+                return Ok(false);
             }
         }
     }
 
-    /// Run a single instruction from the virtual RISC-V engine.
+    /// Step through a single instruction from the current program counter.
     ///
     /// Returns:
-    /// - `Ok(bool)`: Executed successfully.
-    ///     - `True`: Should continue execution.
-    ///     - `False`: Should halt.
+    /// - `Ok(bool)`: Success, returns if should continue:
+    ///     - `True`: Should continue.
+    ///     - `False`: Should stop (halted).
     /// - `Err(EmbiveError)`: Failed to execute.
     #[inline]
     pub fn step(&mut self) -> Result<bool, EmbiveError> {
@@ -111,7 +134,9 @@ impl<'a> Engine<'a> {
         let data = self.fetch()?;
 
         // Decode and execute the instruction
-        decode_and_execute(self, data)
+        let ret = decode_and_execute(self, data)?;
+
+        Ok(ret)
     }
 
     /// Fetch the next instruction (raw) from the program counter.
@@ -121,7 +146,7 @@ impl<'a> Engine<'a> {
     /// - `Err(EmbiveError)`: The program counter is out of bounds.
     #[inline]
     pub fn fetch(&mut self) -> Result<u32, EmbiveError> {
-        let data = self.memory.load::<4>(self.pc)?;
+        let data = self.memory.load::<4>(self.program_counter)?;
         Ok(u32::from_le_bytes(data))
     }
 
@@ -146,13 +171,13 @@ impl<'a> Engine<'a> {
     }
 
     /// Get the program counter.
-    pub fn pc(&self) -> u32 {
-        self.pc
+    pub fn program_counter(&self) -> u32 {
+        self.program_counter
     }
 
     /// Set the program counter.
-    pub fn set_pc(&mut self, pc: u32) {
-        self.pc = pc;
+    pub fn set_program_counter(&mut self, program_counter: u32) {
+        self.program_counter = program_counter;
     }
 
     /// Handle a system call.
@@ -164,7 +189,7 @@ impl<'a> Engine<'a> {
     ///     - System call function is not set.
     #[inline(always)]
     pub(crate) fn syscall(&mut self) -> Result<(), EmbiveError> {
-        if let Some(syscall_fn) = self.syscall_fn {
+        if let Some(syscall_fn) = self.config.syscall_fn {
             // Syscall Number
             let nr = self.registers.inner[Register::A7 as usize];
 
@@ -193,23 +218,35 @@ impl<'a> Engine<'a> {
     }
 }
 
+/// Get the initial program counter.
+pub(crate) fn initial_program_counter() -> u32 {
+    #[cfg(feature = "start_at_ram")]
+    {
+        RAM_OFFSET
+    }
+    #[cfg(not(feature = "start_at_ram"))]
+    {
+        0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_reset() {
-        let mut engine = Engine::new(&[], &mut [], None).unwrap();
+        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         engine.reset();
 
         #[cfg(feature = "start_at_ram")]
         {
-            assert_eq!(engine.pc, RAM_OFFSET);
+            assert_eq!(engine.program_counter, RAM_OFFSET);
         }
 
         #[cfg(not(feature = "start_at_ram"))]
         {
-            assert_eq!(engine.pc, 0);
+            assert_eq!(engine.program_counter, 0);
         }
 
         assert_eq!(engine.registers.get(Register::Zero as usize).unwrap(), 0);
@@ -222,5 +259,68 @@ mod tests {
         for i in Register::Gp as usize..32 {
             assert_eq!(engine.registers.get(i).unwrap(), 0);
         }
+    }
+
+    #[cfg(feature = "instruction_limit")]
+    #[test]
+    fn test_instruction_limit() {
+        let code = &[
+            0x93, 0x08, 0x20, 0x00, // li   a7, 2      (Syscall nr)
+            0x13, 0x05, 0x10, 0x00, // li   a0, 1      (arg0, set first bit)
+            0x13, 0x15, 0xf5, 0x01, // slli a0, a0, 31 (arg0, shift-left 31 bits)
+            0x73, 0x00, 0x10, 0x00, // ebreak          (Halt)
+        ];
+
+        let mut engine = Engine::new(
+            code,
+            &mut [],
+            Config {
+                instruction_limit: 2,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        // Force program counter to 0x0 (bypass start_from_ram feature)
+        engine.program_counter = 0;
+
+        // Run the engine
+        let result = engine.run();
+        assert_eq!(result, Ok(true));
+        assert_eq!(engine.program_counter, 4 * 2);
+
+        // Run the engine again
+        let result = engine.run();
+        assert_eq!(result, Ok(false));
+        assert_eq!(engine.program_counter, 4 * 4);
+    }
+
+    #[cfg(feature = "instruction_limit")]
+    #[test]
+    fn test_instruction_limit_zero() {
+        let code = &[
+            0x93, 0x08, 0x20, 0x00, // li   a7, 2      (Syscall nr)
+            0x13, 0x05, 0x10, 0x00, // li   a0, 1      (arg0, set first bit)
+            0x13, 0x15, 0xf5, 0x01, // slli a0, a0, 31 (arg0, shift-left 31 bits)
+            0x73, 0x00, 0x10, 0x00, // ebreak          (Halt)
+        ];
+
+        let mut engine = Engine::new(
+            code,
+            &mut [],
+            Config {
+                instruction_limit: 0,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        // Force program counter to 0x0 (bypass start_from_ram feature)
+        engine.program_counter = 0;
+
+        // Run the engine
+        let result = engine.run();
+        assert_eq!(result, Ok(false));
+        assert_eq!(engine.program_counter, 4 * 4);
     }
 }

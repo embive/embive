@@ -9,12 +9,12 @@
 
 Embive is a low-level sandboxing library focused on the embedding of untrusted code for constrained environments.  
 As it interprets RISC-V bytecode, multiple languages are supported out of the box by Embive (Rust, C, C++, Zig, TinyGo, etc.).  
-By default, Embive doesn’t require any external crate, dynamic memory allocation or the standard library (`no_std` and `no_alloc`).
+By default, it doesn’t require external crates, dynamic memory allocation or the standard library (`no_std` & `no_alloc`).
 
 Currently, it supports the `RV32I[M]` unprivileged instruction set (M extension enabled by default).
 
 ## Example
-```rust,ignore
+```rust
 use embive::engine::{memory::Memory, register::Register, Engine, SYSCALL_ARGS};
 
 // A simple syscall example. Check [`engine::SyscallFn`] for more information.
@@ -48,12 +48,18 @@ fn main() {
     // Create engine
     let mut engine = Engine::new(code, &mut ram, Some(syscall)).unwrap();
 
-    // Run it
-    engine.run().unwrap();
+    // Create engine config
+    let config = Config {
+        syscall_fn: Some(syscall),
+        ..Default::default()
+    };
+
+    // Create engine
+    let mut engine = Engine::new(code, &mut ram, config).unwrap();
 
     // Check the result
-   assert_eq!(engine.registers().get(Register::A0 as usize).unwrap(), 30);
-   assert_eq!(engine.registers().get(Register::A1 as usize).unwrap(), 0);
+    assert_eq!(engine.registers().get(Register::A0 as usize).unwrap(), 30);
+    assert_eq!(engine.registers().get(Register::A1 as usize).unwrap(), 0);
 }
 ```
 
@@ -70,7 +76,7 @@ fn main() {
     - [ ] A Extension (Atomic Instructions)
 - [x] System Calls
     - Function calls from interpreted to native code
-- [ ] Resource limiter
+- [x] Resource limiter
     - Yield the engine after a configurable amount of instructions are executed.
 - [ ] CI/CD
     - Incorporate more tests into the repository and create test automations for PRs

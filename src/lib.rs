@@ -2,7 +2,7 @@
 //!
 //! Embive is a low-level sandboxing library focused on the embedding of untrusted code for constrained environments.  
 //! As it interprets RISC-V bytecode, multiple languages are supported out of the box by Embive (Rust, C, C++, Zig, TinyGo, etc.).  
-//! By default, Embive doesn’t require any external crate, dynamic memory allocation or the standard library (`no_std` and `no_alloc`).
+//! By default, it doesn’t require external crates, dynamic memory allocation or the standard library (`no_std` & `no_alloc`).
 //!
 //! Currently, it supports the `RV32I[M]` unprivileged instruction set (M extension enabled by default, check [Features](#features)).
 //!
@@ -12,8 +12,8 @@
 //!
 //! ## Example
 //!
-//! ```
-//! use embive::{engine::{Engine, SYSCALL_ARGS}, memory::Memory, register::Register};
+//! ```no_run
+//! use embive::{engine::{Engine, Config, SYSCALL_ARGS}, memory::Memory, register::Register};
 //!
 //! // A simple syscall example. Check [`engine::SyscallFn`] for more information.
 //! fn syscall(nr: i32, args: [i32; SYSCALL_ARGS], memory: &mut Memory) -> (i32, i32) {
@@ -43,8 +43,14 @@
 //!     let mut ram = [0; 1024];
 //!     ram[..4].copy_from_slice(&u32::to_le_bytes(10));
 //!
+//!     // Create engine config
+//!     let config = Config {
+//!         syscall_fn: Some(syscall),
+//!         ..Default::default()
+//!    };
+//!
 //!     // Create engine
-//!     let mut engine = Engine::new(code, &mut ram, Some(syscall)).unwrap();
+//!     let mut engine = Engine::new(code, &mut ram, config).unwrap();
 //!
 //!     // Run it
 //!     engine.run().unwrap();
@@ -65,9 +71,12 @@
 //! - `start_at_ram`:
 //!     - Start engine with the program counter set to [`crate::memory::RAM_OFFSET`]. Useful for running RAM-only programs.
 //!         - Disabled by default, no additional dependencies.
+//! - `instruction_limit`:
+//!     - Limit the number of instructions executed by the engine, yielding when the limit is reached.
+//!         - Disabled by default, no additional dependencies.
 #![cfg_attr(not(test), no_std)]
 pub mod engine;
-pub mod memory;
-pub mod register;
 pub mod error;
 mod instruction;
+pub mod memory;
+pub mod register;

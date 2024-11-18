@@ -38,7 +38,7 @@ impl Instruction for Store {
         }
 
         // Go to next instruction
-        engine.pc = engine.pc.wrapping_add(INSTRUCTION_SIZE);
+        engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
         Ok(true)
     }
@@ -47,7 +47,7 @@ impl Instruction for Store {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::RAM_OFFSET;
+    use crate::{engine::initial_program_counter, memory::RAM_OFFSET};
 
     fn get_ram_addr() -> i32 {
         RAM_OFFSET as i32
@@ -56,7 +56,7 @@ mod tests {
     #[test]
     fn test_sb() {
         let mut memory = [0; 2];
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x1,
@@ -71,14 +71,17 @@ mod tests {
 
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
         assert_eq!(memory[1], 0x2);
     }
 
     #[test]
     fn test_sh() {
         let mut memory = [0; 4];
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x2,
@@ -93,14 +96,17 @@ mod tests {
 
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
         assert_eq!(memory[2..4], [0x34, 0x12]);
     }
 
     #[test]
     fn test_sw() {
         let mut memory = [0; 4];
-        let mut engine = Engine::new(&[], &mut memory, None).unwrap();
+        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x0,
@@ -115,7 +121,10 @@ mod tests {
 
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.pc, INSTRUCTION_SIZE);
+        assert_eq!(
+            engine.program_counter,
+            initial_program_counter() + INSTRUCTION_SIZE
+        );
         assert_eq!(memory[0..4], [0x78, 0x56, 0x34, 0x12]);
     }
 }
