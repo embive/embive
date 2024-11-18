@@ -13,6 +13,10 @@ By default, it doesn’t require external crates, dynamic memory allocation or t
 
 Currently, it supports the `RV32I[M]` unprivileged instruction set (M extension enabled by default).
 
+## Templates
+The following templates are available for programs that run in Embive:
+- [Rust template](https://github.com/embive/embive-rust-template)
+
 ## Example
 ```rust
 use embive::engine::{memory::Memory, register::Register, Engine, SYSCALL_ARGS};
@@ -23,7 +27,7 @@ fn syscall(nr: i32, args: [i32; SYSCALL_ARGS], memory: &mut Memory) -> (i32, i32
     match nr {
         1 => (args[0] + args[1], 0), // Add two numbers (arg[0] + arg[1])
         2 => match memory.load(args[0] as u32) { // Load from RAM (arg[0])
-            Ok(val) => (i32::from_le_bytes(val), 0),
+            Ok(val) => (i32::from_le_bytes(val), 0), // RISC-V is little endian
             Err(_) => (0, 1),
         },
         _ => (0, 2),

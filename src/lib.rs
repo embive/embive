@@ -21,7 +21,7 @@
 //!     match nr {
 //!         1 => (args[0] + args[1], 0), // Add two numbers (arg[0] + arg[1])
 //!         2 => match memory.load(args[0] as u32) { // Load from RAM (arg[0])
-//!             Ok(val) => (i32::from_le_bytes(val), 0),
+//!             Ok(val) => (i32::from_le_bytes(val), 0), // RISC-V is little endian
 //!             Err(_) => (0, 1),
 //!         },
 //!         _ => (0, 2),

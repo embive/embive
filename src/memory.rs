@@ -46,7 +46,9 @@ impl Memory<'_> {
     /// - `Err(EmbiveError)`: Memory address and/or `N` are out of bounds.
     #[inline]
     pub fn load<const N: usize>(&self, address: u32) -> Result<[u8; N], EmbiveError> {
+        // Check if the address is in RAM or code.
         if address >= RAM_OFFSET {
+            // Subtract the RAM offset to get the actual address.
             let address = address - RAM_OFFSET;
 
             if (address as usize + N) > self.ram.len() {
