@@ -16,15 +16,15 @@
 //! use embive::{engine::{Engine, Config, SYSCALL_ARGS}, memory::Memory, register::Register};
 //!
 //! // A simple syscall example. Check [`engine::SyscallFn`] for more information.
-//! fn syscall(nr: i32, args: [i32; SYSCALL_ARGS], memory: &mut Memory) -> (i32, i32) {
+//! fn syscall(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut Memory) -> Result<i32, i32> {
 //!     println!("{}: {:?}", nr, args);
 //!     match nr {
-//!         1 => (args[0] + args[1], 0), // Add two numbers (arg[0] + arg[1])
+//!         1 => Ok(args[0] + args[1]), // Add two numbers (arg[0] + arg[1])
 //!         2 => match memory.load(args[0] as u32) { // Load from RAM (arg[0])
-//!             Ok(val) => (i32::from_le_bytes(val), 0), // RISC-V is little endian
-//!             Err(_) => (0, 1),
+//!             Ok(val) => Ok(i32::from_le_bytes(val)), // RISC-V is little endian
+//!             Err(_) => Err(1),
 //!         },
-//!         _ => (0, 2),
+//!         _ => Err(2),
 //!     }
 //! }
 //!
@@ -68,9 +68,6 @@
 //! - `m_extension`:
 //!     - Enable the RV32M extension (multiply and divide instructions).
 //!         - Enabled by default, no additional dependencies.
-//! - `start_at_ram`:
-//!     - Start engine with the program counter set to [`crate::memory::RAM_OFFSET`]. Useful for running RAM-only programs.
-//!         - Disabled by default, no additional dependencies.
 //! - `instruction_limit`:
 //!     - Limit the number of instructions executed by the engine, yielding when the limit is reached.
 //!         - Disabled by default, no additional dependencies.

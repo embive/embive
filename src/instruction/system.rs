@@ -50,7 +50,7 @@ impl Instruction for System {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{initial_program_counter, Config, SyscallFn};
+    use crate::engine::{Config, SyscallFn};
     use crate::memory::RAM_OFFSET;
     use crate::register::Register;
 
@@ -72,10 +72,7 @@ mod tests {
 
         let result = misc_mem.execute(&mut engine);
         assert_eq!(result, Ok(false));
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -104,7 +101,7 @@ mod tests {
 
             memory.store(get_ram_addr(), nr.to_le_bytes()).unwrap();
 
-            (args.iter().sum::<i32>(), 0i32)
+            Ok(args.iter().sum::<i32>())
         };
 
         let mut memory = [0; 4];
@@ -123,6 +120,7 @@ mod tests {
         *engine.registers.get_mut(Register::A3 as usize).unwrap() = 3;
         *engine.registers.get_mut(Register::A4 as usize).unwrap() = 4;
         *engine.registers.get_mut(Register::A5 as usize).unwrap() = 5;
+        *engine.registers.get_mut(Register::A6 as usize).unwrap() = 6;
         *engine.registers.get_mut(Register::A7 as usize).unwrap() = -1;
 
         let misc_mem = System {
@@ -136,8 +134,8 @@ mod tests {
 
         let result = misc_mem.execute(&mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.registers.get(Register::A0 as usize), Ok(15));
-        assert_eq!(engine.registers.get(Register::A1 as usize), Ok(0));
+        assert_eq!(engine.registers.get(Register::A0 as usize), Ok(0));
+        assert_eq!(engine.registers.get(Register::A1 as usize), Ok(21));
         assert_eq!(
             engine
                 .memory
@@ -145,9 +143,6 @@ mod tests {
                 .map(|v| i32::from_le_bytes(v)),
             Ok(-1)
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 }

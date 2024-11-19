@@ -19,18 +19,18 @@ The following templates are available for programs that run in Embive:
 
 ## Example
 ```rust
-use embive::engine::{memory::Memory, register::Register, Engine, SYSCALL_ARGS};
+use embive::{engine::{Engine, Config, SYSCALL_ARGS}, memory::Memory, register::Register};
 
 // A simple syscall example. Check [`engine::SyscallFn`] for more information.
-fn syscall(nr: i32, args: [i32; SYSCALL_ARGS], memory: &mut Memory) -> (i32, i32) {
+fn syscall(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut Memory) -> Result<i32, i32> {
     println!("{}: {:?}", nr, args);
     match nr {
-        1 => (args[0] + args[1], 0), // Add two numbers (arg[0] + arg[1])
+        1 => Ok(args[0] + args[1]), // Add two numbers (arg[0] + arg[1])
         2 => match memory.load(args[0] as u32) { // Load from RAM (arg[0])
-            Ok(val) => (i32::from_le_bytes(val), 0), // RISC-V is little endian
-            Err(_) => (0, 1),
+            Ok(val) => Ok(i32::from_le_bytes(val)), // RISC-V is little endian
+            Err(_) => Err(1),
         },
-        _ => (0, 2),
+        _ => Err(2),
     }
 }
 
@@ -44,26 +44,26 @@ fn main() {
         0x93, 0x08, 0x10, 0x00, // li   a7, 1      (Syscall nr)
         0x93, 0x05, 0x40, 0x01, // li   a1,20      (arg1, 20)
         0x73, 0x00, 0x00, 0x00, // ecall           (Syscall, add two args)
-        0x73, 0x00, 0x10, 0x00  // ebreak          (Halt, exit VM)
+        0x73, 0x00, 0x10, 0x00  // ebreak          (Halt)
     ];
     let mut ram = [0; 1024];
     ram[..4].copy_from_slice(&u32::to_le_bytes(10));
-
-    // Create engine
-    let mut engine = Engine::new(code, &mut ram, Some(syscall)).unwrap();
 
     // Create engine config
     let config = Config {
         syscall_fn: Some(syscall),
         ..Default::default()
-    };
+   };
 
     // Create engine
     let mut engine = Engine::new(code, &mut ram, config).unwrap();
 
+    // Run it
+    engine.run().unwrap();
+
     // Check the result
-    assert_eq!(engine.registers().get(Register::A0 as usize).unwrap(), 30);
-    assert_eq!(engine.registers().get(Register::A1 as usize).unwrap(), 0);
+   assert_eq!(engine.registers().get(Register::A0 as usize).unwrap(), 30);
+   assert_eq!(engine.registers().get(Register::A1 as usize).unwrap(), 0);
 }
 ```
 

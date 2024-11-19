@@ -1,32 +1,31 @@
 //! Engine Module
 
-#[cfg(feature = "start_at_ram")]
-use crate::memory::RAM_OFFSET;
-
 use crate::error::EmbiveError;
 use crate::instruction::decode_and_execute;
 use crate::memory::Memory;
 use crate::register::{Register, Registers};
 
 /// Number of syscall arguments
-pub const SYSCALL_ARGS: usize = 6;
+pub const SYSCALL_ARGS: usize = 7;
 
 /// System call function signature
 ///
-/// This function is called by the `ecall` instruction. Check [syscall(2)](https://man7.org/linux/man-pages/man2/syscall.2.html).
-/// The following RISC-V registers are used for system calls:
-/// - `a7`: System call number.
-/// - `a0` to `a5`: System call arguments.
-/// - `a0` and `a1`: Return values.
+/// This function is called by the `ecall` instruction.
+/// The following registers are used:
+/// - `a7`: Syscall number.
+/// - `a0` to `a6`: Arguments.
+/// - `a0`: Return error code.
+/// - `a1`: Return value.
 ///
 /// Arguments:
-/// - `nr`: System call number.
-/// - `args`: System call arguments, up to [`SYSCALL_ARGS`].
-/// - `memory`: The virtual RISC-V engine memory.
+/// - `nr`: Syscall number (`a7`).
+/// - `args`: Arguments (`a0` to `a6`).
+/// - `memory`: Engine memory.
 ///
 /// Returns:
-/// - `(i32, i32)`: Return values.
-pub type SyscallFn = fn(nr: i32, args: [i32; SYSCALL_ARGS], memory: &mut Memory) -> (i32, i32);
+/// - `Result<i32, i32>`: value (`a1`), error (`a0`).
+pub type SyscallFn =
+    fn(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut Memory) -> Result<i32, i32>;
 
 /// Embive Engine Configuration Struct
 #[derive(Debug, Default, PartialEq, Clone, Copy)]
@@ -67,7 +66,7 @@ impl<'a> Engine<'a> {
 
         // Create the engine
         Ok(Engine {
-            program_counter: initial_program_counter(),
+            program_counter: 0,
             registers: Registers::new(&memory),
             memory,
             config,
@@ -75,12 +74,12 @@ impl<'a> Engine<'a> {
     }
 
     /// Reset the engine:
-    /// - Program counter is reset to 0. (Or [`crate::memory::RAM_OFFSET`] if the `start_at_ram` feature is enabled).
+    /// - Program counter is reset to 0.
     /// - Registers are reset to 0.
     /// - Stack pointer (x2) is set to the top of the stack.
     /// - Instruction counter is reset to 0 (if the `instruction_limit` feature is enabled).
     pub fn reset(&mut self) {
-        self.program_counter = initial_program_counter();
+        self.program_counter = 0;
         self.registers.reset(&self.memory);
     }
 
@@ -194,39 +193,34 @@ impl<'a> Engine<'a> {
             let nr = self.registers.inner[Register::A7 as usize];
 
             // Syscall Arguments
-            let args = [
-                self.registers.inner[Register::A0 as usize],
-                self.registers.inner[Register::A1 as usize],
-                self.registers.inner[Register::A2 as usize],
-                self.registers.inner[Register::A3 as usize],
-                self.registers.inner[Register::A4 as usize],
-                self.registers.inner[Register::A5 as usize],
-            ];
+            let args = self.registers.inner[Register::A0 as usize..]
+                .first_chunk()
+                // Unwrap is safe because the slice is guaranteed to have more than SYSCALL_ARGS elements.
+                .unwrap();
 
             // Call the syscall function
-            let (val, val2) = syscall_fn(nr, args, &mut self.memory);
+            match syscall_fn(nr, args, &mut self.memory) {
+                Ok(value) => {
+                    // Clear error code
+                    self.registers.inner[Register::A0 as usize] = 0;
 
-            // Set return values
-            self.registers.inner[Register::A0 as usize] = val;
-            self.registers.inner[Register::A1 as usize] = val2;
+                    // Set return value
+                    self.registers.inner[Register::A1 as usize] = value;
+                }
+                Err(error) => {
+                    // Set error code
+                    self.registers.inner[Register::A0 as usize] = error;
+                                        
+                    // Clear return value
+                    self.registers.inner[Register::A1 as usize] = 0;
+                }
+            }
 
             return Ok(());
         }
 
         // No syscall function set
         Err(EmbiveError::NoSyscallFunction)
-    }
-}
-
-/// Get the initial program counter.
-pub(crate) fn initial_program_counter() -> u32 {
-    #[cfg(feature = "start_at_ram")]
-    {
-        RAM_OFFSET
-    }
-    #[cfg(not(feature = "start_at_ram"))]
-    {
-        0
     }
 }
 
@@ -239,15 +233,7 @@ mod tests {
         let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
         engine.reset();
 
-        #[cfg(feature = "start_at_ram")]
-        {
-            assert_eq!(engine.program_counter, RAM_OFFSET);
-        }
-
-        #[cfg(not(feature = "start_at_ram"))]
-        {
-            assert_eq!(engine.program_counter, 0);
-        }
+        assert_eq!(engine.program_counter, 0);
 
         assert_eq!(engine.registers.get(Register::Zero as usize).unwrap(), 0);
         assert_eq!(engine.registers.get(Register::Ra as usize).unwrap(), 0);

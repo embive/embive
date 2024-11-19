@@ -112,8 +112,6 @@ impl Instruction for Op {
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::initial_program_counter;
-
     use super::*;
 
     #[test]
@@ -134,10 +132,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(start_regs, engine.registers);
         assert_eq!(result, Ok(true));
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -157,10 +152,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 30);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -180,10 +172,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), i32::MIN);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -203,10 +192,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 10);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -226,10 +212,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), i32::MAX);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -250,10 +233,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b0110);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -274,10 +254,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b1110);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -298,10 +275,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b1000);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -322,10 +296,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b101000);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -346,10 +317,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b10);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -370,10 +338,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0xB);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -394,10 +359,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b10);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -418,10 +380,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0xFFFFFFFBu32 as i32);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -442,10 +401,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -466,10 +422,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -490,10 +443,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -514,10 +464,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -538,10 +485,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -562,10 +506,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -586,10 +527,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -610,10 +548,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -634,10 +569,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 200);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -658,10 +590,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 20);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -685,10 +614,7 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (((i32::MAX as i64) * 2) >> 32) as i32
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -712,10 +638,7 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (((i32::MAX as i64) * 2) >> 32) as u32 as i32
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -739,10 +662,7 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             ((-2 * (u32::MAX as i64)) >> 32) as u32 as i32
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -766,10 +686,7 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (((i32::MAX as u64) * 2) >> 32) as i32
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -790,10 +707,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 2);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -814,10 +728,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -2);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -841,10 +752,7 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (u32::MAX / 10) as i32
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -865,10 +773,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -889,10 +794,7 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[cfg(feature = "m_extension")]
@@ -913,9 +815,6 @@ mod tests {
         let result = op.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), (u32::MAX % 1) as i32);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 }

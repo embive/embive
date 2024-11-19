@@ -68,8 +68,6 @@ impl Instruction for OpImm {
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::initial_program_counter;
-
     use super::*;
 
     #[test]
@@ -88,10 +86,7 @@ mod tests {
         let result = addi.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1001);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -110,10 +105,7 @@ mod tests {
         let result = addi.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -999);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -132,10 +124,7 @@ mod tests {
         let result = xori.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x0234);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -154,10 +143,7 @@ mod tests {
         let result = xori.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), !0x1234);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -176,10 +162,7 @@ mod tests {
         let result = ori.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 | 0x1000);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -198,10 +181,7 @@ mod tests {
         let result = ori.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 | -0x1000);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -220,10 +200,7 @@ mod tests {
         let result = andi.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 & 0x1000);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -242,10 +219,7 @@ mod tests {
         let result = slli.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 << 0b101);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -267,10 +241,7 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             ((-0x1234i32 as u32) >> 0b101) as i32
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -289,10 +260,7 @@ mod tests {
         let result = srai.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -0x1234 >> 0b101);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -311,10 +279,7 @@ mod tests {
         let result = slti.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -333,10 +298,7 @@ mod tests {
         let result = slti.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -355,10 +317,7 @@ mod tests {
         let result = slti.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -377,10 +336,7 @@ mod tests {
         let result = slti.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -399,10 +355,7 @@ mod tests {
         let result = sltiu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -421,10 +374,7 @@ mod tests {
         let result = sltiu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -443,10 +393,7 @@ mod tests {
         let result = sltiu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -465,9 +412,6 @@ mod tests {
         let result = sltiu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 }

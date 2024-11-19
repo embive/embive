@@ -54,7 +54,7 @@ impl Instruction for Load {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{engine::initial_program_counter, memory::RAM_OFFSET};
+    use crate::memory::RAM_OFFSET;
 
     fn get_ram_addr() -> i32 {
         RAM_OFFSET as i32
@@ -79,10 +79,7 @@ mod tests {
         let result = lb.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x12);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -104,10 +101,7 @@ mod tests {
         let result = lb.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -0x12);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -130,10 +124,7 @@ mod tests {
         let result = lh.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x3412);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -154,10 +145,7 @@ mod tests {
         let result = lh.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -28098);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -182,10 +170,7 @@ mod tests {
         let result = lw.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x78563412);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -206,10 +191,7 @@ mod tests {
         let result = lw.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -19088744);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -231,10 +213,7 @@ mod tests {
         let result = lbu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x12);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -259,10 +238,7 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (-0x12i8 as u8) as i32
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -285,10 +261,7 @@ mod tests {
         let result = lhu.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x3412);
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
     #[test]
@@ -312,9 +285,6 @@ mod tests {
             *engine.registers.get_mut(1).unwrap(),
             (-28098i16 as u16) as i32
         );
-        assert_eq!(
-            engine.program_counter,
-            initial_program_counter() + INSTRUCTION_SIZE
-        );
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 }
