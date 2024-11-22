@@ -77,3 +77,104 @@ pub mod error;
 mod instruction;
 pub mod memory;
 pub mod register;
+
+#[cfg(test)]
+mod tests {
+    use std::{fs::read_dir, path::PathBuf};
+
+    use crate::{
+        engine::{Config, Engine, SYSCALL_ARGS},
+        memory::{Memory, RAM_OFFSET},
+    };
+
+    const RAM_SIZE: usize = 16 * 1024;
+    const TESTS_TO_RUN: usize = 48; // Amount of binaries to test
+
+    thread_local! {
+        static SYSCALL_COUNTER: std::cell::RefCell<i32> = std::cell::RefCell::new(0);
+    }
+
+    fn syscall(nr: i32, args: &[i32; SYSCALL_ARGS], _memory: &mut Memory) -> Result<i32, i32> {
+        if nr == 93 {
+            if args[0] == 0 {
+                println!("Test was successful");
+            } else {
+                panic!("Test failed at: {}", args[0]);
+            }
+        } else {
+            panic!("Unknown syscall: {}", nr);
+        }
+
+        SYSCALL_COUNTER.with(|c| *c.borrow_mut() += 1);
+        Ok(0)
+    }
+
+    #[test]
+    fn riscv_binaries_test() {
+        let code = &[];
+
+        // Get all tests
+        let mut dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        dir.push("tests");
+        let tests = read_dir(dir).expect("Failed to read tests directory");
+
+        // Iterate over tests
+        let mut tested_files = 0;
+        for test in tests {
+            let test = test.expect("Failed to get test");
+
+            // Check if it's a binary
+            match test.path().extension() {
+                Some(ext) if ext == "bin" => {}
+                _ => continue, // Ignore other files
+            }
+
+            println!("\nRunning: {}", test.file_name().to_string_lossy());
+
+            // Load binary into RAM
+            let mut ram = [0; RAM_SIZE];
+            let test_bytes = std::fs::read(test.path()).expect("Failed to read test file");
+            ram[..test_bytes.len()].copy_from_slice(&test_bytes);
+
+            // Create engine
+            let mut engine = Engine::new(
+                code,
+                &mut ram,
+                Config {
+                    syscall_fn: Some(syscall),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+            // Set program counter to RAM (code start)
+            engine.set_program_counter(RAM_OFFSET);
+
+            // Get syscall counter prior to running
+            let prev_syscall_counter = SYSCALL_COUNTER.with(|c| *c.borrow());
+
+            // Run it
+            loop {
+                // println!("PC: {}", engine.program_counter());
+                // println!("Registers: {:?}", engine.registers());
+                // println!("Instruction: {:08X}", u32::from_le_bytes(engine.memory().load::<4>(engine.program_counter()).unwrap()));
+
+                if !engine.step().unwrap() {
+                    break;
+                }
+            }
+
+            tested_files += 1;
+
+            // Get syscall counter after running
+            let new_syscall_counter = SYSCALL_COUNTER.with(|c| *c.borrow());
+
+            // Check if syscall was incremented
+            if new_syscall_counter <= prev_syscall_counter {
+                panic!("No syscall was made");
+            }
+        }
+
+        assert_eq!(tested_files, TESTS_TO_RUN);
+    }
+}

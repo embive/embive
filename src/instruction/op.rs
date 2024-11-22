@@ -88,15 +88,39 @@ impl Instruction for Op {
                     ((rs1 as i64).wrapping_mul((rs2 as u32) as i64) >> 32) as u32 as i32
                 } // Mulhsu (Multiply High, signed, unsigned)
                 #[cfg(feature = "m_extension")]
-                MULHU_FUNCT10 => ((rs1 as u64).wrapping_mul(rs2 as u64) >> 32) as i32, // Mulhu (Multiply High, unsigned)
+                MULHU_FUNCT10 => ((rs1 as u32 as u64).wrapping_mul(rs2 as u32 as u64) >> 32) as i32, // Mulhu (Multiply High, unsigned)
                 #[cfg(feature = "m_extension")]
-                DIV_FUNCT10 => rs1.wrapping_div(rs2), // Div (Divide)
+                DIV_FUNCT10 => {
+                    if rs2 == 0 {
+                        -1
+                    } else {
+                        rs1.wrapping_div(rs2)
+                    }
+                } // Div (Divide)
                 #[cfg(feature = "m_extension")]
-                DIVU_FUNCT10 => (rs1 as u32).wrapping_div(rs2 as u32) as i32, // Divu (Divide, unsigned)
+                DIVU_FUNCT10 => {
+                    if rs2 == 0 {
+                        -1
+                    } else {
+                        (rs1 as u32).wrapping_div(rs2 as u32) as i32
+                    }
+                } // Divu (Divide, unsigned)
                 #[cfg(feature = "m_extension")]
-                REM_FUNCT10 => rs1.wrapping_rem(rs2), // Rem (Remainder)
+                REM_FUNCT10 => {
+                    if rs2 == 0 {
+                        rs1
+                    } else {
+                        rs1.wrapping_rem(rs2)
+                    }
+                } // Rem (Remainder)
                 #[cfg(feature = "m_extension")]
-                REMU_FUNCT10 => (rs1 as u32).wrapping_rem(rs2 as u32) as i32, // Remu (Remainder, unsigned)
+                REMU_FUNCT10 => {
+                    if rs2 == 0 {
+                        rs1
+                    } else {
+                        (rs1 as u32).wrapping_rem(rs2 as u32) as i32
+                    }
+                } // Remu (Remainder, unsigned)
                 SUB_FUNCT10 => rs1.wrapping_sub(rs2), // Sub
                 SRA_FUNCT10 => rs1.wrapping_shr(rs2 as u32), // Sra (Arithmetic shift right, fill with sign bit)
                 _ => return Err(EmbiveError::InvalidInstruction),

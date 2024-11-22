@@ -16,6 +16,7 @@ Currently, it supports the `RV32I[M]` unprivileged instruction set (M extension 
 ## Templates
 The following templates are available for programs that run in Embive:
 - [Rust template](https://github.com/embive/embive-rust-template)
+- [C/C++ Template](https://github.com/embive/embive-c-template)
 
 ## Example
 ```rust

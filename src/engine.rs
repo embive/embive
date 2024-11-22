@@ -210,7 +210,7 @@ impl<'a> Engine<'a> {
                 Err(error) => {
                     // Set error code
                     self.registers.inner[Register::A0 as usize] = error;
-                                        
+
                     // Clear return value
                     self.registers.inner[Register::A1 as usize] = 0;
                 }
