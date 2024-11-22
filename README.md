@@ -84,7 +84,7 @@ fn main() {
     - Function calls from interpreted to native code
 - [x] Resource limiter
     - Yield the engine after a configurable amount of instructions are executed.
-- [ ] CI/CD
+- [x] CI/CD
     - Incorporate more tests into the repository and create test automations for PRs
 - [ ] Bytecode optimization (AOT and JIT)
     - Allow in-place JIT and AOT compilation to a format easier to parse.
