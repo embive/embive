@@ -25,15 +25,6 @@ impl Memory<'_> {
         Memory { code, ram }
     }
 
-    /// The end address of RAM buffer.
-    /// Used to set the stack pointer (x2) to the top of the stack.
-    ///
-    /// Returns:
-    /// - `i32`: The end address of the RAM buffer.
-    pub(crate) fn ram_end(&self) -> u32 {
-        RAM_OFFSET + self.ram.len() as u32
-    }
-
     /// Load `N` bytes from memory address.
     /// Memory address can be from code (0x0x00000000) or RAM ([`RAM_OFFSET`]).
     /// RISC-V is little-endian, always use `to_le_bytes()` and `from_le_bytes()`.

@@ -1,7 +1,6 @@
 //! Register Module
 
 use crate::error::EmbiveError;
-use crate::memory::Memory;
 
 /// Number of registers in embive
 pub const REGISTER_COUNT: usize = 32;
@@ -14,13 +13,13 @@ pub enum Register {
     /// x0 register, hardwired to 0 (read-only).
     Zero = 0,
     /// x1 register, return address.
-    Ra = 1,
+    RA = 1,
     /// x2 register, stack pointer.
-    Sp = 2,
+    SP = 2,
     /// x3 register, global pointer.
-    Gp = 3,
+    GP = 3,
     /// x4 register, thread pointer.
-    Tp = 4,
+    TP = 4,
     /// x5 register, temporary.
     T0 = 5,
     /// x6 register, temporary.
@@ -85,17 +84,17 @@ pub struct Registers {
 
 impl Registers {
     /// Create a new set of registers.
-    /// The stack pointer (x2) is set to the end of memory, all other registers are set to 0.
-    pub(crate) fn new(memory: &Memory<'_>) -> Registers {
+    /// All registers are set to 0.
+    pub(crate) fn new() -> Registers {
         Registers {
-            inner: initial_registers(memory),
+            inner: [0; REGISTER_COUNT as usize],
         }
     }
 
     /// Reset the registers to their initial state.
-    /// The stack pointer (x2) is set to the end of memory, all other registers are set to 0.
-    pub(crate) fn reset(&mut self, memory: &Memory<'_>) {
-        self.inner = initial_registers(memory);
+    /// All registers are set to 0.
+    pub(crate) fn reset(&mut self) {
+        self.inner = [0; REGISTER_COUNT as usize];
     }
 
     /// Get a register.
@@ -132,17 +131,6 @@ impl Registers {
 
         Ok(&mut self.inner[index])
     }
-}
-
-/// Get the initial registers state.
-/// The stack pointer (`x2`) is set to the end of memory, all other registers are set to `0`.
-fn initial_registers(memory: &Memory<'_>) -> [i32; REGISTER_COUNT as usize] {
-    let mut registers = [0; REGISTER_COUNT as usize];
-
-    // Set the stack pointer to the top of the stack
-    registers[Register::Sp as u8 as usize] = memory.ram_end() as i32;
-
-    registers
 }
 
 #[cfg(test)]

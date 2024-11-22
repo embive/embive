@@ -62,13 +62,11 @@ impl<'a> Engine<'a> {
         ram: &'a mut [u8],
         config: Config,
     ) -> Result<Engine<'a>, EmbiveError> {
-        let memory = Memory::new(code, ram);
-
         // Create the engine
         Ok(Engine {
             program_counter: 0,
-            registers: Registers::new(&memory),
-            memory,
+            registers: Registers::new(),
+            memory: Memory::new(code, ram),
             config,
         })
     }
@@ -76,11 +74,9 @@ impl<'a> Engine<'a> {
     /// Reset the engine:
     /// - Program counter is reset to 0.
     /// - Registers are reset to 0.
-    /// - Stack pointer (x2) is set to the top of the stack.
-    /// - Instruction counter is reset to 0 (if the `instruction_limit` feature is enabled).
     pub fn reset(&mut self) {
         self.program_counter = 0;
-        self.registers.reset(&self.memory);
+        self.registers.reset();
     }
 
     /// Run the engine
@@ -226,6 +222,8 @@ impl<'a> Engine<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::register::REGISTER_COUNT;
+
     use super::*;
 
     #[test]
@@ -235,14 +233,7 @@ mod tests {
 
         assert_eq!(engine.program_counter, 0);
 
-        assert_eq!(engine.registers.get(Register::Zero as usize).unwrap(), 0);
-        assert_eq!(engine.registers.get(Register::Ra as usize).unwrap(), 0);
-        assert_eq!(
-            engine.registers.get(Register::Sp as usize).unwrap(),
-            engine.memory().ram_end() as i32
-        );
-
-        for i in Register::Gp as usize..32 {
+        for i in 0..REGISTER_COUNT {
             assert_eq!(engine.registers.get(i).unwrap(), 0);
         }
     }
@@ -266,9 +257,6 @@ mod tests {
             },
         )
         .unwrap();
-
-        // Force program counter to 0x0 (bypass start_from_ram feature)
-        engine.program_counter = 0;
 
         // Run the engine
         let result = engine.run();
@@ -300,9 +288,6 @@ mod tests {
             },
         )
         .unwrap();
-
-        // Force program counter to 0x0 (bypass start_from_ram feature)
-        engine.program_counter = 0;
 
         // Run the engine
         let result = engine.run();
