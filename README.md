@@ -11,6 +11,9 @@ Embive is a low-level sandboxing library focused on the embedding of untrusted c
 As it interprets RISC-V bytecode, multiple languages are supported out of the box by Embive (Rust, C, C++, Zig, TinyGo, etc.).  
 By default, it doesn’t require external crates, dynamic memory allocation or the standard library (`no_std` & `no_alloc`).
 
+Embive is designed for any error during execution to be recoverable, allowing the host to handle it as needed.
+As so, no panics should occur on release builds, despite the bytecode being executed.
+
 Currently, it supports the `RV32I[M]` unprivileged instruction set (M extension enabled by default).
 
 ## Templates
