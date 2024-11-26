@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeI;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 /// Jump And Link Reg
 /// Both an Opcode and an Instruction
@@ -11,18 +12,18 @@ pub struct Jalr {
     ty: TypeI,
 }
 
-impl Opcode for Jalr {
+impl<M: Memory> Opcode<M> for Jalr {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeI::from(data),
         }
     }
 }
 
-impl Instruction for Jalr {
+impl<M: Memory> Instruction<M> for Jalr {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         // Get the value of the source register.
         let rs1 = engine.registers.get(self.ty.rs1)?;
 
@@ -42,11 +43,14 @@ impl Instruction for Jalr {
 
 #[cfg(test)]
 mod tests {
+    use crate::memory::SliceMemory;
+
     use super::*;
 
     #[test]
     fn test_jlr_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let jalr = Jalr {
             ty: TypeI {
@@ -67,7 +71,8 @@ mod tests {
 
     #[test]
     fn test_jlr() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let jalr = Jalr {
             ty: TypeI {
@@ -88,7 +93,8 @@ mod tests {
 
     #[test]
     fn test_jlr_same_reg() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let jalr = Jalr {
             ty: TypeI {

@@ -13,6 +13,7 @@ mod system;
 
 use crate::engine::Engine;
 use crate::error::EmbiveError;
+use crate::memory::Memory;
 
 use auipc::Auipc;
 use branch::Branch;
@@ -43,7 +44,7 @@ const MISC_MEM_OPCODE: u8 = 0b000_1111;
 const SYSTEM_OPCODE: u8 = 0b111_0011;
 
 /// Opcode trait. All opcodes must implement this trait.
-trait Opcode {
+trait Opcode<M: Memory> {
     /// Decode the instruction.
     ///
     /// Arguments:
@@ -51,11 +52,11 @@ trait Opcode {
     ///
     /// Returns:
     /// - `impl Instruction`: The decoded instruction.
-    fn decode(data: u32) -> impl Instruction;
+    fn decode(data: u32) -> impl Instruction<M>;
 }
 
 /// Instruction trait. All instructions must implement this trait.
-trait Instruction {
+trait Instruction<M: Memory> {
     /// Execute the instruction.
     ///
     /// Arguments:
@@ -66,7 +67,7 @@ trait Instruction {
     ///     - `True`: Should continue execution.
     ///     - `False`: Should halt.
     /// - `Err(EmbiveError)`: Failed to execute instruction.
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError>;
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError>;
 }
 
 /// Decode and execute an instruction.
@@ -81,7 +82,10 @@ trait Instruction {
 ///     - `False`: Should halt.
 /// - `Err(EmbiveError)`: Failed to decode or execute instruction.
 #[inline]
-pub(crate) fn decode_and_execute(engine: &mut Engine, data: u32) -> Result<bool, EmbiveError> {
+pub(crate) fn decode_and_execute<M: Memory>(
+    engine: &mut Engine<M>,
+    data: u32,
+) -> Result<bool, EmbiveError> {
     match (data & 0x7F) as u8 {
         LOAD_OPCODE => Load::decode(data).execute(engine),
         MISC_MEM_OPCODE => MiscMem::decode(data).execute(engine),
@@ -101,11 +105,12 @@ pub(crate) fn decode_and_execute(engine: &mut Engine, data: u32) -> Result<bool,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::Engine;
+    use crate::{engine::Engine, memory::SliceMemory};
 
     #[test]
     fn test_invalid_instruction() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let result = super::decode_and_execute(&mut engine, 0);
         assert_eq!(result, Err(EmbiveError::InvalidInstruction));
     }

@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeJ;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 /// Jump And Link
 /// Both an Opcode and an Instruction
@@ -11,18 +12,18 @@ pub struct Jal {
     ty: TypeJ,
 }
 
-impl Opcode for Jal {
+impl<M: Memory> Opcode<M> for Jal {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeJ::from(data),
         }
     }
 }
 
-impl Instruction for Jal {
+impl<M: Memory> Instruction<M> for Jal {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         // Load pc + instruction size into the destination register.
         if self.ty.rd != 0 {
             let reg = engine.registers.get_mut(self.ty.rd)?;
@@ -39,11 +40,14 @@ impl Instruction for Jal {
 
 #[cfg(test)]
 mod tests {
+    use crate::memory::SliceMemory;
+
     use super::*;
 
     #[test]
     fn test_jal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let jal = Jal {
             ty: TypeJ { rd: 1, imm: 0x1000 },

@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeI;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 const ADDI_FUNC3: u8 = 0b000;
 const XORI_FUNC3: u8 = 0b100;
@@ -19,18 +20,18 @@ pub struct OpImm {
     ty: TypeI,
 }
 
-impl Opcode for OpImm {
+impl<M: Memory> Opcode<M> for OpImm {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeI::from(data),
         }
     }
 }
 
-impl Instruction for OpImm {
+impl<M: Memory> Instruction<M> for OpImm {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let rs1 = engine.registers.get(self.ty.rs1)?;
         let imm = self.ty.imm as i32;
 
@@ -68,11 +69,14 @@ impl Instruction for OpImm {
 
 #[cfg(test)]
 mod tests {
+    use crate::memory::SliceMemory;
+
     use super::*;
 
     #[test]
     fn test_addi() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let addi = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -91,7 +95,8 @@ mod tests {
 
     #[test]
     fn test_addi_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let addi = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -110,7 +115,8 @@ mod tests {
 
     #[test]
     fn test_xori() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let xori = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -129,7 +135,8 @@ mod tests {
 
     #[test]
     fn test_xori_not() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let xori = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -148,7 +155,8 @@ mod tests {
 
     #[test]
     fn test_ori() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let ori = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -167,7 +175,8 @@ mod tests {
 
     #[test]
     fn test_ori_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let ori = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -186,7 +195,8 @@ mod tests {
 
     #[test]
     fn test_andi() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let andi = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -205,7 +215,8 @@ mod tests {
 
     #[test]
     fn test_slli() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let slli = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -224,7 +235,8 @@ mod tests {
 
     #[test]
     fn test_srli() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let srli = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -246,7 +258,8 @@ mod tests {
 
     #[test]
     fn test_srai() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let srai = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -265,7 +278,8 @@ mod tests {
 
     #[test]
     fn test_slti_lower() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let slti = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -284,7 +298,8 @@ mod tests {
 
     #[test]
     fn test_slti_greater() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let slti = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -303,7 +318,8 @@ mod tests {
 
     #[test]
     fn test_slti_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let slti = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -322,7 +338,8 @@ mod tests {
 
     #[test]
     fn test_slti_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let slti = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -341,7 +358,8 @@ mod tests {
 
     #[test]
     fn test_sltiu_lower() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let sltiu = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -360,7 +378,8 @@ mod tests {
 
     #[test]
     fn test_sltiu_greater() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let sltiu = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -379,7 +398,8 @@ mod tests {
 
     #[test]
     fn test_sltiu_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let sltiu = OpImm {
             ty: TypeI {
                 rd: 1,
@@ -398,7 +418,8 @@ mod tests {
 
     #[test]
     fn test_sltiu_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let sltiu = OpImm {
             ty: TypeI {
                 rd: 1,

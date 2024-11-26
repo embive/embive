@@ -20,53 +20,58 @@ pub const SYSCALL_ARGS: usize = 7;
 /// Arguments:
 /// - `nr`: Syscall number (`a7`).
 /// - `args`: Arguments (`a0` to `a6`).
-/// - `memory`: Engine memory.
+/// - `memory`: System Memory (code + RAM).
 ///
 /// Returns:
 /// - `Result<i32, i32>`: value (`a1`), error (`a0`).
-pub type SyscallFn =
-    fn(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut Memory) -> Result<i32, i32>;
+pub type SyscallFn<M> = fn(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut M) -> Result<i32, i32>;
 
 /// Embive Engine Configuration Struct
-#[derive(Debug, Default, PartialEq, Clone, Copy)]
-pub struct Config {
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Config<M: Memory> {
     /// System call function (Called by `ecall` instruction).
-    pub syscall_fn: Option<SyscallFn>,
+    pub syscall_fn: Option<SyscallFn<M>>,
     /// Instruction limit. Yield when the limit is reached (0 = No limit).
     #[cfg(feature = "instruction_limit")]
     pub instruction_limit: u32,
 }
 
-/// Embive Engine Struct
-#[derive(Debug)]
-pub struct Engine<'a> {
-    /// Program counter.
-    pub(crate) program_counter: u32,
-    /// CPU Registers.
-    pub(crate) registers: Registers,
-    /// System Memory (program + RAM).
-    pub(crate) memory: Memory<'a>,
-    /// Engine Configuration.
-    config: Config,
+impl<M: Memory> Default for Config<M> {
+    fn default() -> Self {
+        Config {
+            syscall_fn: None,
+            #[cfg(feature = "instruction_limit")]
+            instruction_limit: 0,
+        }
+    }
 }
 
-impl<'a> Engine<'a> {
-    /// Create a new embive engine.
+/// Embive Engine Struct
+#[derive(Debug)]
+pub struct Engine<'a, M: Memory> {
+    /// Program Counter.
+    pub program_counter: u32,
+    /// CPU Registers.
+    pub registers: Registers,
+    /// System Memory (code + RAM).
+    pub memory: &'a mut M,
+    /// Engine Configuration.
+    pub config: Config<M>,
+}
+
+impl<'a, M: Memory> Engine<'a, M> {
+    /// Create a new engine.
     ///
     /// Arguments:
     /// - `code`: Code buffer, `u8` slice.
     /// - `ram`: RAM buffer, mutable `u8` slice.
     /// - `config`: Engine configuration.
-    pub fn new(
-        code: &'a [u8],
-        ram: &'a mut [u8],
-        config: Config,
-    ) -> Result<Engine<'a>, EmbiveError> {
+    pub fn new(memory: &'a mut M, config: Config<M>) -> Result<Self, EmbiveError> {
         // Create the engine
         Ok(Engine {
             program_counter: 0,
             registers: Registers::new(),
-            memory: Memory::new(code, ram),
+            memory,
             config,
         })
     }
@@ -145,36 +150,6 @@ impl<'a> Engine<'a> {
         Ok(u32::from_le_bytes(data))
     }
 
-    /// Get a reference to the registers.
-    pub fn registers(&self) -> &Registers {
-        &self.registers
-    }
-
-    /// Get a mutable reference to the registers.
-    pub fn registers_mut(&mut self) -> &mut Registers {
-        &mut self.registers
-    }
-
-    /// Get a reference to the memory.
-    pub fn memory(&self) -> &Memory<'a> {
-        &self.memory
-    }
-
-    /// Get a mutable reference to the memory.
-    pub fn memory_mut(&mut self) -> &mut Memory<'a> {
-        &mut self.memory
-    }
-
-    /// Get the program counter.
-    pub fn program_counter(&self) -> u32 {
-        self.program_counter
-    }
-
-    /// Set the program counter.
-    pub fn set_program_counter(&mut self, program_counter: u32) {
-        self.program_counter = program_counter;
-    }
-
     /// Handle a system call.
     /// The system call function is called with the system call number and arguments.
     ///
@@ -222,13 +197,14 @@ impl<'a> Engine<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::register::REGISTER_COUNT;
+    use crate::{memory::SliceMemory, register::REGISTER_COUNT};
 
     use super::*;
 
     #[test]
     fn test_reset() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.reset();
 
         assert_eq!(engine.program_counter, 0);
@@ -248,9 +224,9 @@ mod tests {
             0x73, 0x00, 0x10, 0x00, // ebreak          (Halt)
         ];
 
+        let mut memory = SliceMemory::new(code, &mut []);
         let mut engine = Engine::new(
-            code,
-            &mut [],
+            &mut memory,
             Config {
                 instruction_limit: 2,
                 ..Default::default()
@@ -279,9 +255,9 @@ mod tests {
             0x73, 0x00, 0x10, 0x00, // ebreak          (Halt)
         ];
 
+        let mut memory = SliceMemory::new(code, &mut []);
         let mut engine = Engine::new(
-            code,
-            &mut [],
+            &mut memory,
             Config {
                 instruction_limit: 0,
                 ..Default::default()

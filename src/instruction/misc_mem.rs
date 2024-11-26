@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeI;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 /// Miscellaneous Memory OpCode
 /// Format: I-Type.
@@ -10,18 +11,18 @@ pub struct MiscMem {
     _ty: TypeI,
 }
 
-impl Opcode for MiscMem {
+impl<M: Memory> Opcode<M> for MiscMem {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             _ty: TypeI::from(data),
         }
     }
 }
 
-impl Instruction for MiscMem {
+impl<M: Memory> Instruction<M> for MiscMem {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         // Fencing isn't applicable to this implementation.
         // This is a nop.
 
@@ -35,11 +36,14 @@ impl Instruction for MiscMem {
 
 #[cfg(test)]
 mod tests {
+    use crate::memory::SliceMemory;
+
     use super::*;
 
     #[test]
     fn test_misc_mem() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let misc_mem = MiscMem {
             _ty: TypeI {

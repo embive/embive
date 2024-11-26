@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeU;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 /// Add Upper Immediate to Program Counter
 /// Both an Opcode and an Instruction
@@ -11,18 +12,18 @@ pub struct Auipc {
     ty: TypeU,
 }
 
-impl Opcode for Auipc {
+impl<M: Memory> Opcode<M> for Auipc {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeU::from(data),
         }
     }
 }
 
-impl Instruction for Auipc {
+impl<M: Memory> Instruction<M> for Auipc {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         if self.ty.rd != 0 {
             // rd = 0 means its a HINT instruction, just ignore it.
             // Load the immediate value + pc into the register.
@@ -40,11 +41,14 @@ impl Instruction for Auipc {
 
 #[cfg(test)]
 mod tests {
+    use crate::memory::SliceMemory;
+
     use super::*;
 
     #[test]
     fn test_auipc() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let auipc = Auipc {
             ty: TypeU { rd: 1, imm: 0x1000 },
@@ -58,7 +62,8 @@ mod tests {
 
     #[test]
     fn test_auipc_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let auipc = Auipc {
             ty: TypeU {

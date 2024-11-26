@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeR;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 const MUL_ADD_SUB_FUNCT3: u8 = 0b000;
 const DIV_XOR_FUNCT3: u8 = 0b100;
@@ -52,18 +53,18 @@ pub struct Op {
     ty: TypeR,
 }
 
-impl Opcode for Op {
+impl<M: Memory> Opcode<M> for Op {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeR::from(data),
         }
     }
 }
 
-impl Instruction for Op {
+impl<M: Memory> Instruction<M> for Op {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let rs1 = engine.registers.get(self.ty.rs1)?;
         let rs2 = engine.registers.get(self.ty.rs2)?;
 
@@ -136,11 +137,14 @@ impl Instruction for Op {
 
 #[cfg(test)]
 mod tests {
+    use crate::memory::SliceMemory;
+
     use super::*;
 
     #[test]
     fn test_rd_0() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 0,
@@ -161,7 +165,8 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -181,7 +186,8 @@ mod tests {
 
     #[test]
     fn test_add_wrapping() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -201,7 +207,8 @@ mod tests {
 
     #[test]
     fn test_sub() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -221,7 +228,8 @@ mod tests {
 
     #[test]
     fn test_sub_wrapping() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -241,7 +249,8 @@ mod tests {
 
     #[test]
     fn test_xor() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -262,7 +271,8 @@ mod tests {
 
     #[test]
     fn test_or() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -283,7 +293,8 @@ mod tests {
 
     #[test]
     fn test_and() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -304,7 +315,8 @@ mod tests {
 
     #[test]
     fn test_sll() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -325,7 +337,8 @@ mod tests {
 
     #[test]
     fn test_srl() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -346,7 +359,8 @@ mod tests {
 
     #[test]
     fn test_srl_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -367,7 +381,8 @@ mod tests {
 
     #[test]
     fn test_sra() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -388,7 +403,8 @@ mod tests {
 
     #[test]
     fn test_sra_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -409,7 +425,8 @@ mod tests {
 
     #[test]
     fn test_slt_lower() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -430,7 +447,8 @@ mod tests {
 
     #[test]
     fn test_slt_greater() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -451,7 +469,8 @@ mod tests {
 
     #[test]
     fn test_slt_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -472,7 +491,8 @@ mod tests {
 
     #[test]
     fn test_slt_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -493,7 +513,8 @@ mod tests {
 
     #[test]
     fn test_sltu_lower() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -514,7 +535,8 @@ mod tests {
 
     #[test]
     fn test_sltu_greater() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -535,7 +557,8 @@ mod tests {
 
     #[test]
     fn test_sltu_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -556,7 +579,8 @@ mod tests {
 
     #[test]
     fn test_sltu_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -578,7 +602,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mul() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -599,7 +624,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mul_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -620,7 +646,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mulh() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -644,7 +671,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mulhsu() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -668,7 +696,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mulhsu_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -692,7 +721,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_mulhu() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -716,7 +746,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_div() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -737,7 +768,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_div_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -758,7 +790,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_divu() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -782,7 +815,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_rem() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -803,7 +837,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_rem_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,
@@ -824,7 +859,8 @@ mod tests {
     #[cfg(feature = "m_extension")]
     #[test]
     fn test_remu() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let op = Op {
             ty: TypeR {
                 rd: 1,

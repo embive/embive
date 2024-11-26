@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeB;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 const BEQ_FUNCT3: u8 = 0b000;
 const BNE_FUNCT3: u8 = 0b001;
@@ -17,18 +18,18 @@ pub struct Branch {
     ty: TypeB,
 }
 
-impl Opcode for Branch {
+impl<M: Memory> Opcode<M> for Branch {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeB::from(data),
         }
     }
 }
 
-impl Instruction for Branch {
+impl<M: Memory> Instruction<M> for Branch {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let rs1 = engine.registers.get(self.ty.rs1)?;
         let rs2 = engine.registers.get(self.ty.rs2)?;
 
@@ -58,11 +59,14 @@ impl Instruction for Branch {
 
 #[cfg(test)]
 mod tests {
+    use crate::memory::SliceMemory;
+
     use super::*;
 
     #[test]
     fn test_beq_negative() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -83,7 +87,8 @@ mod tests {
 
     #[test]
     fn test_beq_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -104,7 +109,8 @@ mod tests {
 
     #[test]
     fn test_beq_not_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -125,7 +131,8 @@ mod tests {
 
     #[test]
     fn test_bne_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -146,7 +153,8 @@ mod tests {
 
     #[test]
     fn test_bne_not_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -167,7 +175,8 @@ mod tests {
 
     #[test]
     fn test_blt_less_than() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -188,7 +197,8 @@ mod tests {
 
     #[test]
     fn test_blt_greater_than() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -209,7 +219,8 @@ mod tests {
 
     #[test]
     fn test_bge_greater_than() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -230,7 +241,8 @@ mod tests {
 
     #[test]
     fn test_bge_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -251,7 +263,8 @@ mod tests {
 
     #[test]
     fn test_bge_less_than() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -272,7 +285,8 @@ mod tests {
 
     #[test]
     fn test_bltu_less_than() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -293,7 +307,8 @@ mod tests {
 
     #[test]
     fn test_bltu_greater_than() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -314,7 +329,8 @@ mod tests {
 
     #[test]
     fn test_bgeu_greater_than() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -335,7 +351,8 @@ mod tests {
 
     #[test]
     fn test_bgeu_equal() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {
@@ -356,7 +373,8 @@ mod tests {
 
     #[test]
     fn test_bgeu_less_than() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
         let branch = Branch {
             ty: TypeB {

@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeI;
 use crate::instruction::{Instruction, Opcode};
+use crate::memory::Memory;
 
 use super::INSTRUCTION_SIZE;
 
@@ -17,18 +18,18 @@ pub struct System {
     ty: TypeI,
 }
 
-impl Opcode for System {
+impl<M: Memory> Opcode<M> for System {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeI::from(data),
         }
     }
 }
 
-impl Instruction for System {
+impl<M: Memory> Instruction<M> for System {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let ret = match self.ty.funct3 {
             EBREAK_ECALL_FUNCT3 => {
                 match self.ty.imm {
@@ -51,7 +52,7 @@ impl Instruction for System {
 mod tests {
     use super::*;
     use crate::engine::{Config, SyscallFn};
-    use crate::memory::RAM_OFFSET;
+    use crate::memory::{Memory, SliceMemory, RAM_OFFSET};
     use crate::register::Register;
 
     fn get_ram_addr() -> u32 {
@@ -60,7 +61,8 @@ mod tests {
 
     #[test]
     fn test_ebreak() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let misc_mem = System {
             ty: TypeI {
                 rd: 0,
@@ -77,7 +79,8 @@ mod tests {
 
     #[test]
     fn test_ecall_error() {
-        let mut engine = Engine::new(&[], &mut [], Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let misc_mem = System {
             ty: TypeI {
                 rd: 0,
@@ -93,7 +96,7 @@ mod tests {
 
     #[test]
     fn test_ecall() {
-        let syscall_fn: SyscallFn = |nr, args, memory| {
+        let syscall_fn: SyscallFn<SliceMemory> = |nr, args, memory| {
             assert_eq!(nr, -1);
             for (i, arg) in args.iter().enumerate() {
                 assert_eq!(*arg, i as i32);
@@ -104,9 +107,9 @@ mod tests {
             Ok(args.iter().sum::<i32>())
         };
 
-        let mut memory = [0; 4];
+        let mut ram = [0; 4];
+        let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(
-            &[],
             &mut memory,
             Config {
                 syscall_fn: Some(syscall_fn),

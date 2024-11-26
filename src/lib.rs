@@ -3,7 +3,7 @@
 //! Embive is a low-level sandboxing library focused on the embedding of untrusted code for constrained environments.  
 //! As it interprets RISC-V bytecode, multiple languages are supported out of the box by Embive (Rust, C, C++, Zig, TinyGo, etc.).  
 //! By default, it doesn’t require external crates, dynamic memory allocation or the standard library (`no_std` & `no_alloc`).
-//! 
+//!
 //! Embive is designed for any error during execution to be recoverable, allowing the host to handle it as needed.
 //! As so, no panics should occur on release builds, despite the bytecode being executed.
 //!
@@ -16,10 +16,10 @@
 //! ## Example
 //!
 //! ```
-//! use embive::{engine::{Engine, Config, SYSCALL_ARGS}, memory::Memory, register::Register};
+//! use embive::{engine::{Engine, Config, SYSCALL_ARGS}, memory::{Memory, SliceMemory}, register::Register};
 //!
 //! /// A simple syscall example. Check [`engine::SyscallFn`] for more information.
-//! fn syscall(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut Memory) -> Result<i32, i32> {
+//! fn syscall<M: Memory>(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut M) -> Result<i32, i32> {
 //!     println!("Syscall nr: {}, Args: {:?}", nr, args);
 //!     match nr {
 //!         1 => Ok(args[0] + args[1]), // Add two numbers (arg[0] + arg[1])
@@ -43,9 +43,13 @@
 //!         0x73, 0x00, 0x00, 0x00, // ecall           (Syscall, add two args)
 //!         0x73, 0x00, 0x10, 0x00  // ebreak          (Halt)
 //!     ];
+//!
 //!     let mut ram = [0; 1024];
 //!     // Store value 10 at RAM address 0 (0x80000000)
 //!     ram[..4].copy_from_slice(&u32::to_le_bytes(10));
+//!
+//!     // Create memory from code and RAM slices
+//!     let mut memory = SliceMemory::new(code, &mut ram);
 //!
 //!     // Create engine config
 //!     let config = Config {
@@ -53,15 +57,13 @@
 //!         ..Default::default()
 //!     };
 //!
-//!     // Create engine
-//!     let mut engine = Engine::new(code, &mut ram, config).unwrap();
-//!
-//!     // Run it
+//!     // Create engine & run it
+//!     let mut engine = Engine::new(&mut memory, config).unwrap();
 //!     engine.run().unwrap();
 //!
-//!     // Check the result
-//!     assert_eq!(engine.registers().get(Register::A0 as usize).unwrap(), 0);
-//!     assert_eq!(engine.registers().get(Register::A1 as usize).unwrap(), 30);
+//!     // Check the result (Ok(30))
+//!     assert_eq!(engine.registers.get(Register::A0 as usize).unwrap(), 0);
+//!     assert_eq!(engine.registers.get(Register::A1 as usize).unwrap(), 30);
 //! }
 //! ```
 //!
@@ -98,7 +100,7 @@ mod tests {
 
     use crate::{
         engine::{Config, Engine, SYSCALL_ARGS},
-        memory::{Memory, RAM_OFFSET},
+        memory::{SliceMemory, RAM_OFFSET},
     };
 
     const RAM_SIZE: usize = 16 * 1024;
@@ -108,7 +110,7 @@ mod tests {
         static SYSCALL_COUNTER: std::cell::RefCell<i32> = std::cell::RefCell::new(0);
     }
 
-    fn syscall(nr: i32, args: &[i32; SYSCALL_ARGS], _memory: &mut Memory) -> Result<i32, i32> {
+    fn syscall(nr: i32, args: &[i32; SYSCALL_ARGS], _memory: &mut SliceMemory) -> Result<i32, i32> {
         if nr == 93 {
             if args[0] == 0 {
                 println!("Test was successful");
@@ -150,10 +152,11 @@ mod tests {
             let test_bytes = std::fs::read(test.path()).expect("Failed to read test file");
             ram[..test_bytes.len()].copy_from_slice(&test_bytes);
 
+            let mut memory = SliceMemory::new(code, &mut ram);
+
             // Create engine
             let mut engine = Engine::new(
-                code,
-                &mut ram,
+                &mut memory,
                 Config {
                     syscall_fn: Some(syscall),
                     ..Default::default()
@@ -162,7 +165,7 @@ mod tests {
             .unwrap();
 
             // Set program counter to RAM (code start)
-            engine.set_program_counter(RAM_OFFSET);
+            engine.program_counter = RAM_OFFSET;
 
             // Get syscall counter prior to running
             let prev_syscall_counter = SYSCALL_COUNTER.with(|c| *c.borrow());

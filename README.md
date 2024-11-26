@@ -23,10 +23,10 @@ The following templates are available for programs that run inside Embive:
 
 ## Example
 ```rust
-use embive::{engine::{Engine, Config, SYSCALL_ARGS}, memory::Memory, register::Register};
+use embive::{engine::{Engine, Config, SYSCALL_ARGS}, memory::{Memory, SliceMemory}, register::Register};
 
 /// A simple syscall example. Check [`engine::SyscallFn`] for more information.
-fn syscall(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut Memory) -> Result<i32, i32> {
+fn syscall<M: Memory>(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut M) -> Result<i32, i32> {
     println!("Syscall nr: {}, Args: {:?}", nr, args);
     match nr {
         1 => Ok(args[0] + args[1]), // Add two numbers (arg[0] + arg[1])
@@ -50,9 +50,13 @@ fn main() {
         0x73, 0x00, 0x00, 0x00, // ecall           (Syscall, add two args)
         0x73, 0x00, 0x10, 0x00  // ebreak          (Halt)
     ];
+
     let mut ram = [0; 1024];
     // Store value 10 at RAM address 0 (0x80000000)
     ram[..4].copy_from_slice(&u32::to_le_bytes(10));
+
+    // Create memory from code and RAM slices
+    let mut memory = SliceMemory::new(code, &mut ram);
 
     // Create engine config
     let config = Config {
@@ -60,15 +64,13 @@ fn main() {
         ..Default::default()
     };
 
-    // Create engine
-    let mut engine = Engine::new(code, &mut ram, config).unwrap();
-
-    // Run it
+    // Create engine & run it
+    let mut engine = Engine::new(&mut memory, config).unwrap();
     engine.run().unwrap();
 
-    // Check the result
-    assert_eq!(engine.registers().get(Register::A0 as usize).unwrap(), 0);
-    assert_eq!(engine.registers().get(Register::A1 as usize).unwrap(), 30);
+    // Check the result (Ok(30))
+    assert_eq!(engine.registers.get(Register::A0 as usize).unwrap(), 0);
+    assert_eq!(engine.registers.get(Register::A1 as usize).unwrap(), 30);
 }
 ```
 

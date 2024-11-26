@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeI;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 const LB_FUNCT3: u8 = 0b000;
 const LH_FUNCT3: u8 = 0b001;
@@ -16,18 +17,18 @@ pub struct Load {
     ty: TypeI,
 }
 
-impl Opcode for Load {
+impl<M: Memory> Opcode<M> for Load {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeI::from(data),
         }
     }
 }
 
-impl Instruction for Load {
+impl<M: Memory> Instruction<M> for Load {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let rs1 = engine.registers.get(self.ty.rs1)?;
 
         let address = (rs1 as u32).wrapping_add_signed(self.ty.imm);
@@ -54,7 +55,7 @@ impl Instruction for Load {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::RAM_OFFSET;
+    use crate::memory::{SliceMemory, RAM_OFFSET};
 
     fn get_ram_addr() -> i32 {
         RAM_OFFSET as i32
@@ -62,10 +63,11 @@ mod tests {
 
     #[test]
     fn test_lb() {
-        let mut memory = [0x0; 2];
-        memory[1] = 0x12;
+        let mut ram = [0x0; 2];
+        ram[1] = 0x12;
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lb = Load {
             ty: TypeI {
                 rd: 1,
@@ -84,10 +86,11 @@ mod tests {
 
     #[test]
     fn test_lb_negative() {
-        let mut memory = [0x0; 2];
-        memory[1] = -0x12i8 as u8;
+        let mut ram = [0x0; 2];
+        ram[1] = -0x12i8 as u8;
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lb = Load {
             ty: TypeI {
                 rd: 1,
@@ -106,11 +109,12 @@ mod tests {
 
     #[test]
     fn test_lh() {
-        let mut memory = [0x0; 3];
-        memory[1] = 0x12;
-        memory[2] = 0x34;
+        let mut ram = [0x0; 3];
+        ram[1] = 0x12;
+        ram[2] = 0x34;
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lh = Load {
             ty: TypeI {
                 rd: 1,
@@ -129,9 +133,10 @@ mod tests {
 
     #[test]
     fn test_lh_negative() {
-        let mut memory = (-28098i16).to_le_bytes();
+        let mut ram = (-28098i16).to_le_bytes();
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lh = Load {
             ty: TypeI {
                 rd: 1,
@@ -150,13 +155,14 @@ mod tests {
 
     #[test]
     fn test_lw() {
-        let mut memory = [0x0; 5];
-        memory[1] = 0x12;
-        memory[2] = 0x34;
-        memory[3] = 0x56;
-        memory[4] = 0x78;
+        let mut ram = [0x0; 5];
+        ram[1] = 0x12;
+        ram[2] = 0x34;
+        ram[3] = 0x56;
+        ram[4] = 0x78;
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lw = Load {
             ty: TypeI {
                 rd: 1,
@@ -175,9 +181,10 @@ mod tests {
 
     #[test]
     fn test_lw_negative() {
-        let mut memory = (-19088744i32).to_le_bytes();
+        let mut ram = (-19088744i32).to_le_bytes();
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lw = Load {
             ty: TypeI {
                 rd: 1,
@@ -196,10 +203,11 @@ mod tests {
 
     #[test]
     fn test_lbu() {
-        let mut memory = [0x0; 2];
-        memory[1] = 0x12;
+        let mut ram = [0x0; 2];
+        ram[1] = 0x12;
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lbu = Load {
             ty: TypeI {
                 rd: 1,
@@ -218,10 +226,11 @@ mod tests {
 
     #[test]
     fn test_lbu_negative() {
-        let mut memory = [0x0; 2];
-        memory[1] = -0x12i8 as u8;
+        let mut ram = [0x0; 2];
+        ram[1] = -0x12i8 as u8;
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lbu = Load {
             ty: TypeI {
                 rd: 1,
@@ -243,11 +252,12 @@ mod tests {
 
     #[test]
     fn test_lhu() {
-        let mut memory = [0x0; 3];
-        memory[1] = 0x12;
-        memory[2] = 0x34;
+        let mut ram = [0x0; 3];
+        ram[1] = 0x12;
+        ram[2] = 0x34;
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lhu = Load {
             ty: TypeI {
                 rd: 1,
@@ -266,9 +276,10 @@ mod tests {
 
     #[test]
     fn test_lhu_negative() {
-        let mut memory = (-28098i16).to_le_bytes();
+        let mut ram = (-28098i16).to_le_bytes();
 
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let lhu = Load {
             ty: TypeI {
                 rd: 1,

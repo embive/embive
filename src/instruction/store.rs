@@ -2,6 +2,7 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeS;
 use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::memory::Memory;
 
 const SB_FUNCT3: u8 = 0b000;
 const SH_FUNCT3: u8 = 0b001;
@@ -14,18 +15,18 @@ pub struct Store {
     ty: TypeS,
 }
 
-impl Opcode for Store {
+impl<M: Memory> Opcode<M> for Store {
     #[inline(always)]
-    fn decode(data: u32) -> impl Instruction {
+    fn decode(data: u32) -> impl Instruction<M> {
         Self {
             ty: TypeS::from(data),
         }
     }
 }
 
-impl Instruction for Store {
+impl<M: Memory> Instruction<M> for Store {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine) -> Result<bool, EmbiveError> {
+    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let rs1 = engine.registers.get(self.ty.rs1)?;
         let rs2 = engine.registers.get(self.ty.rs2)?;
 
@@ -47,7 +48,7 @@ impl Instruction for Store {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory::RAM_OFFSET;
+    use crate::memory::{SliceMemory, RAM_OFFSET};
 
     fn get_ram_addr() -> i32 {
         RAM_OFFSET as i32
@@ -55,8 +56,9 @@ mod tests {
 
     #[test]
     fn test_sb() {
-        let mut memory = [0; 2];
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut ram = [0; 2];
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x1,
@@ -72,13 +74,14 @@ mod tests {
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
-        assert_eq!(memory[1], 0x2);
+        assert_eq!(ram[1], 0x2);
     }
 
     #[test]
     fn test_sh() {
-        let mut memory = [0; 4];
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut ram = [0; 4];
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x2,
@@ -94,13 +97,14 @@ mod tests {
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
-        assert_eq!(memory[2..4], [0x34, 0x12]);
+        assert_eq!(ram[2..4], [0x34, 0x12]);
     }
 
     #[test]
     fn test_sw() {
-        let mut memory = [0; 4];
-        let mut engine = Engine::new(&[], &mut memory, Default::default()).unwrap();
+        let mut ram = [0; 4];
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let store = Store {
             ty: TypeS {
                 imm: 0x0,
@@ -116,6 +120,6 @@ mod tests {
         let result = store.execute(&mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
-        assert_eq!(memory[0..4], [0x78, 0x56, 0x34, 0x12]);
+        assert_eq!(ram[0..4], [0x78, 0x56, 0x34, 0x12]);
     }
 }

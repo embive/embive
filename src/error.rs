@@ -15,6 +15,8 @@ pub enum EmbiveError {
     InvalidRegister,
     /// No syscall function is set.
     NoSyscallFunction,
+    /// Custom error.
+    Custom(&'static str),
 }
 
 impl Error for EmbiveError {}
