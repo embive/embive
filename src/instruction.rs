@@ -98,7 +98,7 @@ pub(crate) fn decode_and_execute<M: Memory>(
         JALR_OPCODE => Jalr::decode(data).execute(engine),
         JAL_OPCODE => Jal::decode(data).execute(engine),
         SYSTEM_OPCODE => System::decode(data).execute(engine),
-        _ => return Err(EmbiveError::InvalidInstruction),
+        _ => Err(EmbiveError::InvalidInstruction),
     }
 }
 

@@ -26,15 +26,19 @@ jobs:
     name: Stable Rust Test
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      matrix:
-        toolchain:
-          - stable
     steps:
       - uses: actions/checkout@v4
-      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-      - run: cargo build --verbose --all-features
-      - run: cargo test --verbose --all-features
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Build
+        run: cargo build --verbose --all-features
+      - name: Test
+        run: cargo test --verbose --all-features
+      - name: Format Check
+        run: cargo fmt --all --check
+      - name: Clippy Check
+        run: cargo clippy --all-features -- -D warnings
   
   minrust_test:
     name: Min Rust Version Test
@@ -42,10 +46,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust ${{ env.rust_min }}
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.rust_min }}
-      - run: cargo build --verbose --all-features
-      - run: cargo test --verbose --all-features
-
+      - name: Build
+        run: cargo build --verbose --all-features
+      - name: Test
+        run: cargo test --verbose --all-features

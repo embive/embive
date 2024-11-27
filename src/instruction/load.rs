@@ -35,7 +35,7 @@ impl<M: Memory> Instruction<M> for Load {
         let result = match self.ty.funct3 {
             LB_FUNCT3 => i8::from_le_bytes(engine.memory.load(address)?) as i32,
             LH_FUNCT3 => i16::from_le_bytes(engine.memory.load(address)?) as i32,
-            LW_FUNCT3 => i32::from_le_bytes(engine.memory.load(address)?) as i32,
+            LW_FUNCT3 => i32::from_le_bytes(engine.memory.load(address)?),
             LBU_FUNCT3 => u8::from_le_bytes(engine.memory.load(address)?) as i32,
             LHU_FUNCT3 => u16::from_le_bytes(engine.memory.load(address)?) as i32,
             _ => return Err(EmbiveError::InvalidInstruction),

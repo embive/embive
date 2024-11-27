@@ -40,7 +40,7 @@ impl From<u32> for TypeI {
             rd: ((inst >> 7) & 0b1_1111) as usize,
             funct3: ((inst >> 12) & 0b111) as u8,
             rs1: ((inst >> 15) & 0b1_1111) as usize,
-            imm: ((inst & (0b1111_1111_1111 << 20)) as i32 >> 20) as i32,
+            imm: ((inst & (0b1111_1111_1111 << 20)) as i32 >> 20),
         }
     }
 }

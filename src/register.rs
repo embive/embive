@@ -81,6 +81,12 @@ pub struct Registers {
     pub(crate) inner: [i32; REGISTER_COUNT],
 }
 
+impl Default for Registers {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Registers {
     /// Create a new set of general purpose registers.
     /// All registers are set to 0.

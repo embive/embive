@@ -33,7 +33,7 @@ impl<M: Memory> Instruction<M> for OpImm {
     #[inline(always)]
     fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let rs1 = engine.registers.get(self.ty.rs1)?;
-        let imm = self.ty.imm as i32;
+        let imm = self.ty.imm;
 
         if self.ty.rd != 0 {
             // rd = 0 means its a HINT instruction, just ignore it.

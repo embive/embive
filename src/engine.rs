@@ -170,7 +170,7 @@ impl<'a, M: Memory> Engine<'a, M> {
                 .unwrap();
 
             // Call the syscall function
-            match syscall_fn(nr, args, &mut self.memory) {
+            match syscall_fn(nr, args, self.memory) {
                 Ok(value) => {
                     // Clear error code
                     self.registers.inner[Register::A0 as usize] = 0;

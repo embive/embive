@@ -45,9 +45,7 @@ impl<M: Memory> Instruction<M> for Branch {
 
         engine.program_counter = if branch {
             // Branch to new address
-            engine
-                .program_counter
-                .wrapping_add_signed(self.ty.imm as i32)
+            engine.program_counter.wrapping_add_signed(self.ty.imm)
         } else {
             // Go to next instruction
             engine.program_counter.wrapping_add(INSTRUCTION_SIZE)

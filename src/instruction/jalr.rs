@@ -34,7 +34,7 @@ impl<M: Memory> Instruction<M> for Jalr {
         }
 
         // Set the program counter to the new address.
-        engine.program_counter = (rs1 as u32).wrapping_add_signed(self.ty.imm as i32);
+        engine.program_counter = (rs1 as u32).wrapping_add_signed(self.ty.imm);
 
         // Continue execution
         Ok(true)
