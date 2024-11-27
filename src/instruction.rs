@@ -31,7 +31,7 @@ use system::System;
 const INSTRUCTION_SIZE: u32 = 4;
 
 // RISC-V opcodes.
-const LUI_OPCODE: u8 = 0b0110111;
+const LUI_OPCODE: u8 = 0b011_0111;
 const AUI_PC_OPCODE: u8 = 0b001_0111;
 const JAL_OPCODE: u8 = 0b110_1111;
 const JALR_OPCODE: u8 = 0b110_0111;
@@ -98,7 +98,7 @@ pub(crate) fn decode_and_execute<M: Memory>(
         JALR_OPCODE => Jalr::decode(data).execute(engine),
         JAL_OPCODE => Jal::decode(data).execute(engine),
         SYSTEM_OPCODE => System::decode(data).execute(engine),
-        _ => Err(EmbiveError::InvalidInstruction),
+        _ => return Err(EmbiveError::InvalidInstruction),
     }
 }
 

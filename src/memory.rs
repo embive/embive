@@ -103,7 +103,7 @@ impl Memory for SliceMemory<'_> {
     /// - `Ok(())`: Bytes were stored successfully.
     /// - `Err(EmbiveError)`: Memory address and/or `N` are out of bounds.
     fn store<const N: usize>(&mut self, address: u32, data: [u8; N]) -> Result<(), EmbiveError> {
-        let address = address - RAM_OFFSET;
+        let address = address.wrapping_sub(RAM_OFFSET);
 
         if (address as usize + N) > self.ram.len() {
             return Err(EmbiveError::InvalidMemoryAddress);

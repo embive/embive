@@ -16,6 +16,5 @@ readme = "README.md"
 
 [features]
 default = ["m_extension"]
-full = ["m_extension", "instruction_limit"]
 m_extension = []
 instruction_limit = []

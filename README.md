@@ -14,7 +14,7 @@ By default, it doesn’t require external crates, dynamic memory allocation or t
 Embive is designed for any error during execution to be recoverable, allowing the host to handle it as needed.
 As so, no panics should occur on release builds, despite the bytecode being executed.
 
-Currently, it supports the `RV32I[M]` unprivileged instruction set (M extension enabled by default).
+Currently, it supports the `RV32IMZifencei` unprivileged instruction set.
 
 ## Templates
 The following templates are available for programs that run inside Embive:
@@ -75,16 +75,13 @@ fn main() {
 ```
 
 ## Roadmap
-- [ ] Fully support `RV32G` (RV32IMAFDZicsr_Zifencei)
+- [ ] Fully support `RV32IMACZifencei`
     - [x] RV32I Base Integer Instruction Set
     - [x] M Extension (Multiplication and Division Instructions)
     - [x] Zifencei
         - Implemented as a no-operation as it isn't applicable (Single HART, no cache, no memory-mapped devices, etc.).
-    - [ ] Zicsr
-        - At least the unprivileged CSRs
-    - [ ] F Extension (Single-Precision Floating-Point Instructions)
-    - [ ] D Extension (Double-Precision Floating-Point Instructions)
     - [ ] A Extension (Atomic Instructions)
+    - [ ] C Extension (Compressed Instructions)
 - [x] System Calls
     - Function calls from interpreted to native code
 - [x] Resource limiter
@@ -99,9 +96,13 @@ fn main() {
     - Function calls from native to interpreted code.
 - [ ] Macros for converting native functions to system calls / callbacks
     - Use Rust type-system instead of only allowing `i32` arguments / results
-- [ ] Support C Extension (Compressed Instructions)
-    - This is a maybe, but good to keep in mind while developing other features (especially AOT/JIT).
 
+## What about Floating Point?
+Fully implementing the RISC-V F and/or D extensions would require using a soft-float library, as Rust doesn't 
+support custom rounding modes nor does it expose the IEEE exception flags.
+
+As the soft-float libraries available do not satisfy my requirements (must be portable, safe, no_std, and
+support all rounding modes and exception flags), this feature will be halted until (if) an alternative is found.
 
 ## Minimum supported Rust version (MSRV)
 Embive is guaranteed to compile on stable Rust 1.81 and up.

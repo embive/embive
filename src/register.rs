@@ -2,13 +2,12 @@
 
 use crate::error::EmbiveError;
 
-/// Number of registers in embive
+/// Number of registers available
 pub const REGISTER_COUNT: usize = 32;
 
-/// Embive Register Enum
+/// CPU Register Enum
 #[repr(usize)]
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum Register {
     /// x0 register, hardwired to 0 (read-only).
     Zero = 0,
@@ -76,31 +75,31 @@ pub enum Register {
     T6 = 31,
 }
 
-/// Embive Registers
+/// CPU Registers
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Registers {
-    pub(crate) inner: [i32; REGISTER_COUNT as usize],
+    pub(crate) inner: [i32; REGISTER_COUNT],
 }
 
 impl Registers {
-    /// Create a new set of registers.
+    /// Create a new set of general purpose registers.
     /// All registers are set to 0.
-    pub(crate) fn new() -> Registers {
-        Registers {
-            inner: [0; REGISTER_COUNT as usize],
+    pub fn new() -> Self {
+        Self {
+            inner: [0; REGISTER_COUNT],
         }
     }
 
-    /// Reset the registers to their initial state.
+    /// Reset the general purpose registers to their initial state.
     /// All registers are set to 0.
-    pub(crate) fn reset(&mut self) {
-        self.inner = [0; REGISTER_COUNT as usize];
+    pub fn reset(&mut self) {
+        self.inner = [0; REGISTER_COUNT];
     }
 
-    /// Get a register.
+    /// Get a general purpose register.
     ///
     /// Arguments:
-    /// - `index`: The index of the register (from `0` to [`REGISTER_COUNT`]).
+    /// - `index`: The index of the register (from [`Register::Zero`] to [`Register::T6`]).
     ///
     /// Returns:
     /// - `Ok(i32)`: The value of the register.
@@ -114,17 +113,17 @@ impl Registers {
         Ok(self.inner[index])
     }
 
-    /// Get a mutable reference to a register.
+    /// Get a mutable reference to a general purpose register.
     ///
     /// Arguments:
-    /// - `index`: The index of the register (from `0` to [`REGISTER_COUNT`]).
-    ///     - Register `0` (`Register::Zero`) should be read-only, we ignore it for performance reasons.
+    /// - `index`: The index of the register (from [`Register::Zero`] to [`Register::T6`]).
+    ///     - Register `0` [`Register::Zero`] should be read-only, we ignore it for performance reasons.
     ///
     /// Returns:
     /// - `Ok(&mut i32)`: Mutable reference to the register.
     /// - `Err(EmbiveError)`: The register index is out of bounds.
     #[inline]
-    pub(crate) fn get_mut(&mut self, index: usize) -> Result<&mut i32, EmbiveError> {
+    pub fn get_mut(&mut self, index: usize) -> Result<&mut i32, EmbiveError> {
         if index >= REGISTER_COUNT {
             return Err(EmbiveError::InvalidRegister);
         }
@@ -139,23 +138,40 @@ mod tests {
 
     #[test]
     fn get_register() {
-        let registers = Registers {
-            inner: [0; REGISTER_COUNT as usize],
-        };
+        let mut registers = Registers::new();
 
         assert_eq!(registers.get(0), Ok(0));
         assert_eq!(registers.get(REGISTER_COUNT as usize - 1), Ok(0));
+        assert_eq!(registers.get_mut(0).map(|x| *x), Ok(0));
+        assert_eq!(
+            registers.get_mut(REGISTER_COUNT as usize - 1).map(|x| *x),
+            Ok(0)
+        );
     }
 
     #[test]
     fn get_register_out_of_bounds() {
-        let registers = Registers {
-            inner: [0; REGISTER_COUNT as usize],
-        };
+        let mut registers = Registers::new();
 
         assert_eq!(
             registers.get(REGISTER_COUNT as usize),
             Err(EmbiveError::InvalidRegister)
         );
+        assert_eq!(
+            registers.get_mut(REGISTER_COUNT as usize).map(|x| *x),
+            Err(EmbiveError::InvalidRegister)
+        );
+    }
+
+    #[test]
+    fn reset_registers() {
+        let mut registers = Registers::new();
+        for i in 0..REGISTER_COUNT {
+            registers.inner[i] = i as i32;
+        }
+
+        registers.reset();
+
+        assert_eq!(registers.inner, [0; REGISTER_COUNT]);
     }
 }

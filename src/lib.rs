@@ -94,7 +94,7 @@ mod instruction;
 pub mod memory;
 pub mod register;
 
-#[cfg(test)]
+#[cfg(all(feature = "m_extension", test))]
 mod tests {
     use std::{fs::read_dir, path::PathBuf};
 

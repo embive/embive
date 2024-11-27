@@ -197,7 +197,7 @@ impl<'a, M: Memory> Engine<'a, M> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{memory::SliceMemory, register::REGISTER_COUNT};
+    use crate::memory::SliceMemory;
 
     use super::*;
 
@@ -208,10 +208,6 @@ mod tests {
         engine.reset();
 
         assert_eq!(engine.program_counter, 0);
-
-        for i in 0..REGISTER_COUNT {
-            assert_eq!(engine.registers.get(i).unwrap(), 0);
-        }
     }
 
     #[cfg(feature = "instruction_limit")]
