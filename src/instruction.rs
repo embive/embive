@@ -1,3 +1,6 @@
+//! RISC-V instruction set implementation.
+#[cfg(feature = "a_extension")]
+mod amo;
 mod auipc;
 mod branch;
 mod format;
@@ -15,6 +18,8 @@ use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::memory::Memory;
 
+#[cfg(feature = "a_extension")]
+use amo::Amo;
 use auipc::Auipc;
 use branch::Branch;
 use jal::Jal;
@@ -31,6 +36,8 @@ use system::System;
 const INSTRUCTION_SIZE: u32 = 4;
 
 // RISC-V opcodes.
+#[cfg(feature = "a_extension")]
+const AMO_OPCODE: u8 = 0b010_1111;
 const LUI_OPCODE: u8 = 0b011_0111;
 const AUI_PC_OPCODE: u8 = 0b001_0111;
 const JAL_OPCODE: u8 = 0b110_1111;
@@ -92,6 +99,8 @@ pub(crate) fn decode_and_execute<M: Memory>(
         OP_IMM_OPCODE => OpImm::decode(data).execute(engine),
         AUI_PC_OPCODE => Auipc::decode(data).execute(engine),
         STORE_OPCODE => Store::decode(data).execute(engine),
+        #[cfg(feature = "a_extension")]
+        AMO_OPCODE => Amo::decode(data).execute(engine),
         OP_OPCODE => Op::decode(data).execute(engine),
         LUI_OPCODE => Lui::decode(data).execute(engine),
         BRANCH_OPCODE => Branch::decode(data).execute(engine),

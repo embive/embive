@@ -90,7 +90,7 @@ impl Default for Registers {
 impl Registers {
     /// Create a new set of general purpose registers.
     /// All registers are set to 0.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             inner: [0; REGISTER_COUNT],
         }

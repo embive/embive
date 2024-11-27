@@ -57,6 +57,11 @@ pub struct Engine<'a, M: Memory> {
     pub memory: &'a mut M,
     /// Engine Configuration.
     pub config: Config<M>,
+    /// Memory reservation for atomic operations (addr, value).
+    #[cfg(feature = "a_extension")]
+    pub(crate) memory_reservation: Option<(u32, i32)>,
+    /// A private field to prevent instantiation without [`Engine::new`].
+    _private: (),
 }
 
 impl<'a, M: Memory> Engine<'a, M> {
@@ -73,15 +78,23 @@ impl<'a, M: Memory> Engine<'a, M> {
             registers: Registers::new(),
             memory,
             config,
+            #[cfg(feature = "a_extension")]
+            memory_reservation: None,
+            _private: (),
         })
     }
 
     /// Reset the engine:
     /// - Program counter is reset to 0.
     /// - Registers are reset to 0.
+    /// - Memory reservation is cleared.
     pub fn reset(&mut self) {
         self.program_counter = 0;
         self.registers.reset();
+        #[cfg(feature = "a_extension")]
+        {
+            self.memory_reservation = None;
+        }
     }
 
     /// Run the engine

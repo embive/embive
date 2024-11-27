@@ -15,6 +15,7 @@ readme = "README.md"
 [dependencies]
 
 [features]
-default = ["m_extension"]
+default = []
 m_extension = []
+a_extension = []
 instruction_limit = []

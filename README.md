@@ -14,7 +14,7 @@ By default, it doesn’t require external crates, dynamic memory allocation or t
 Embive is designed for any error during execution to be recoverable, allowing the host to handle it as needed.
 As so, no panics should occur on release builds, despite the bytecode being executed.
 
-Currently, it supports the `RV32IMZifencei` unprivileged instruction set.
+Currently, it supports the `RV32I[MA]Zifencei` unprivileged instruction set.
 
 ## Templates
 The following templates are available for programs that run inside Embive:
@@ -80,7 +80,7 @@ fn main() {
     - [x] M Extension (Multiplication and Division Instructions)
     - [x] Zifencei
         - Implemented as a no-operation as it isn't applicable (Single HART, no cache, no memory-mapped devices, etc.).
-    - [ ] A Extension (Atomic Instructions)
+    - [x] A Extension (Atomic Instructions)
     - [ ] C Extension (Compressed Instructions)
 - [x] System Calls
     - Function calls from interpreted to native code
