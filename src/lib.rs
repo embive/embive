@@ -83,7 +83,10 @@
 //!
 //! - `m_extension`:
 //!     - Enable the RV32M extension (multiply and divide instructions).
-//!         - Enabled by default, no additional dependencies.
+//!         - Disabled by default, no additional dependencies.
+//! - `a_extension`:
+//!     - Enable the RV32A extension (atomic instructions).
+//!         - Disabled by default, no additional dependencies.
 //! - `instruction_limit`:
 //!     - Limit the number of instructions executed by the engine, yielding when the limit is reached.
 //!         - Disabled by default, no additional dependencies.
