@@ -23,18 +23,26 @@ The following templates are available for programs that run inside Embive:
 
 ## Example
 ```rust
-use embive::{engine::{Engine, Config, SYSCALL_ARGS}, memory::{Memory, SliceMemory}, register::Register};
+use embive::{
+    engine::{Config, Engine, SYSCALL_ARGS},
+    memory::{Memory, SliceMemory},
+    register::Register,
+};
 
-/// A simple syscall example. Check [`engine::SyscallFn`] for more information.
-fn syscall<M: Memory>(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut M) -> Result<i32, i32> {
-    println!("Syscall nr: {}, Args: {:?}", nr, args);
+// A simple syscall implementation. Check [`embive::engine::SyscallFn`].
+fn syscall<M: Memory>(
+    nr: i32,
+    args: &[i32; SYSCALL_ARGS],
+    memory: &mut M
+) -> Result<i32, i32> {
+    // Match the syscall number
     match nr {
         1 => Ok(args[0] + args[1]), // Add two numbers (arg[0] + arg[1])
         2 => match memory.load(args[0] as u32) { // Load from RAM (arg[0])
             Ok(val) => Ok(i32::from_le_bytes(val)), // RISC-V is little endian
-            Err(_) => Err(1),
+            Err(_) => Err(1), // Could not read memory
         },
-        _ => Err(2),
+        _ => Err(2), // Not implemented
     }
 }
 
@@ -48,7 +56,7 @@ fn main() {
         0x93, 0x08, 0x10, 0x00, // li   a7, 1      (Syscall nr = 1)
         0x13, 0x05, 0x40, 0x01, // li   a0,20      (a0 = 20)
         0x73, 0x00, 0x00, 0x00, // ecall           (Syscall, add two args)
-        0x73, 0x00, 0x10, 0x00  // ebreak          (Halt)
+        0x73, 0x00, 0x10, 0x00, // ebreak          (Halt)
     ];
 
     let mut ram = [0; 1024];
@@ -61,7 +69,7 @@ fn main() {
     // Create engine config
     let config = Config {
         syscall_fn: Some(syscall),
-        ..Default::default()
+       ..Default::default()
     };
 
     // Create engine & run it
