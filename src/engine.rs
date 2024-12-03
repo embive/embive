@@ -1,7 +1,7 @@
 //! Engine Module
 
 use crate::error::EmbiveError;
-use crate::instruction::decode_and_execute;
+use crate::instruction::decode_execute;
 use crate::memory::Memory;
 use crate::register::{Register, Registers};
 
@@ -48,6 +48,7 @@ impl<M: Memory> Default for Config<M> {
 
 /// Embive Engine Struct
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct Engine<'a, M: Memory> {
     /// Program Counter.
     pub program_counter: u32,
@@ -60,8 +61,6 @@ pub struct Engine<'a, M: Memory> {
     /// Memory reservation for atomic operations (addr, value).
     #[cfg(feature = "a_extension")]
     pub(crate) memory_reservation: Option<(u32, i32)>,
-    /// A private field to prevent instantiation without [`Engine::new`].
-    _private: (),
 }
 
 impl<'a, M: Memory> Engine<'a, M> {
@@ -80,7 +79,6 @@ impl<'a, M: Memory> Engine<'a, M> {
             config,
             #[cfg(feature = "a_extension")]
             memory_reservation: None,
-            _private: (),
         })
     }
 
@@ -147,7 +145,7 @@ impl<'a, M: Memory> Engine<'a, M> {
         let data = self.fetch()?;
 
         // Decode and execute the instruction
-        let ret = decode_and_execute(self, data)?;
+        let ret = decode_execute(self, data)?;
 
         Ok(ret)
     }

@@ -1,40 +1,31 @@
 use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeI;
-use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
 
 /// Jump And Link Reg
 /// Both an Opcode and an Instruction
 /// Format: I-Type.
 /// Action: rd = PC+4; PC = rs1 + imm
-pub struct Jalr {
-    ty: TypeI,
-}
-
-impl<M: Memory> Opcode<M> for Jalr {
-    #[inline(always)]
-    fn decode(data: u32) -> impl Instruction<M> {
-        Self {
-            ty: TypeI::from(data),
-        }
-    }
-}
+pub struct Jalr {}
 
 impl<M: Memory> Instruction<M> for Jalr {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+        let inst = TypeI::from(data);
+
         // Get the value of the source register.
-        let rs1 = engine.registers.get(self.ty.rs1)?;
+        let rs1 = engine.registers.get(inst.rs1)?;
 
         // Load pc + instruction size into the destination register (if not unconditional).
-        if self.ty.rd != 0 {
-            let rd = engine.registers.get_mut(self.ty.rd)?;
+        if inst.rd != 0 {
+            let rd = engine.registers.get_mut(inst.rd)?;
             *rd = engine.program_counter.wrapping_add(INSTRUCTION_SIZE) as i32;
         }
 
         // Set the program counter to the new address.
-        engine.program_counter = (rs1 as u32).wrapping_add_signed(self.ty.imm);
+        engine.program_counter = (rs1 as u32).wrapping_add_signed(inst.imm);
 
         // Continue execution
         Ok(true)
@@ -52,21 +43,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let jalr = Jalr {
-            ty: TypeI {
-                funct3: 0x0,
-                rd: 1,
-                rs1: 2,
-                imm: -0x1000,
-            },
+        let jalr = TypeI {
+            funct3: 0x0,
+            rd: 1,
+            rs1: 2,
+            imm: -0x100,
         };
 
-        *engine.registers.get_mut(2).unwrap() = -0x2000;
+        *engine.registers.get_mut(2).unwrap() = -0x200;
 
-        let result = jalr.execute(&mut engine);
+        let result = Jalr::decode_execute(jalr.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
-        assert_eq!(engine.program_counter, (-0x2000i32 + -0x1000i32) as u32);
+        assert_eq!(engine.program_counter, (-0x200i32 + -0x100i32) as u32);
     }
 
     #[test]
@@ -74,21 +63,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let jalr = Jalr {
-            ty: TypeI {
-                funct3: 0x0,
-                rd: 1,
-                rs1: 2,
-                imm: 0x1000,
-            },
+        let jalr = TypeI {
+            funct3: 0x0,
+            rd: 1,
+            rs1: 2,
+            imm: 0x100,
         };
 
-        *engine.registers.get_mut(2).unwrap() = 0x2000;
+        *engine.registers.get_mut(2).unwrap() = 0x200;
 
-        let result = jalr.execute(&mut engine);
+        let result = Jalr::decode_execute(jalr.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
-        assert_eq!(engine.program_counter, 0x3000);
+        assert_eq!(engine.program_counter, 0x300);
     }
 
     #[test]
@@ -96,20 +83,18 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let jalr = Jalr {
-            ty: TypeI {
-                funct3: 0x0,
-                rd: 1,
-                rs1: 1,
-                imm: 0x1000,
-            },
+        let jalr = TypeI {
+            funct3: 0x0,
+            rd: 1,
+            rs1: 1,
+            imm: 0x100,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x2000;
+        *engine.registers.get_mut(1).unwrap() = 0x200;
 
-        let result = jalr.execute(&mut engine);
+        let result = Jalr::decode_execute(jalr.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
-        assert_eq!(engine.program_counter, 0x3000);
+        assert_eq!(engine.program_counter, 0x300);
     }
 }

@@ -1,7 +1,7 @@
 use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeB;
-use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
 
 const BEQ_FUNCT3: u8 = 0b000;
@@ -14,26 +14,17 @@ const BGEU_FUNCT3: u8 = 0b111;
 /// Branch OpCode
 /// Instructions: Beq, Bne, Blt, Bqe, Bltu, Bgeu
 /// Format: B-Type.
-pub struct Branch {
-    ty: TypeB,
-}
-
-impl<M: Memory> Opcode<M> for Branch {
-    #[inline(always)]
-    fn decode(data: u32) -> impl Instruction<M> {
-        Self {
-            ty: TypeB::from(data),
-        }
-    }
-}
+pub struct Branch {}
 
 impl<M: Memory> Instruction<M> for Branch {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
-        let rs1 = engine.registers.get(self.ty.rs1)?;
-        let rs2 = engine.registers.get(self.ty.rs2)?;
+    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+        let inst = TypeB::from(data);
 
-        let branch = match self.ty.funct3 {
+        let rs1 = engine.registers.get(inst.rs1)?;
+        let rs2 = engine.registers.get(inst.rs2)?;
+
+        let branch = match inst.funct3 {
             BEQ_FUNCT3 => rs1 == rs2,
             BNE_FUNCT3 => rs1 != rs2,
             BLT_FUNCT3 => rs1 < rs2,
@@ -45,7 +36,7 @@ impl<M: Memory> Instruction<M> for Branch {
 
         engine.program_counter = if branch {
             // Branch to new address
-            engine.program_counter.wrapping_add_signed(self.ty.imm)
+            engine.program_counter.wrapping_add_signed(inst.imm)
         } else {
             // Go to next instruction
             engine.program_counter.wrapping_add(INSTRUCTION_SIZE)
@@ -66,21 +57,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: -0x1000,
-                funct3: BEQ_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: -0x100,
+            funct3: BEQ_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = -0x1;
         *engine.registers.get_mut(2).unwrap() = -0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1u32.wrapping_sub(0x1000u32));
+        assert_eq!(engine.program_counter, 0x1u32.wrapping_sub(0x100u32));
     }
 
     #[test]
@@ -88,21 +77,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BEQ_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BEQ_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = 0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1001);
+        assert_eq!(engine.program_counter, 0x101);
     }
 
     #[test]
@@ -110,19 +97,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BEQ_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BEQ_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = 0x2;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
@@ -132,19 +117,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BNE_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BNE_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = 0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
@@ -154,21 +137,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BNE_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BNE_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = -0x2;
         *engine.registers.get_mut(2).unwrap() = -0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1001);
+        assert_eq!(engine.program_counter, 0x101);
     }
 
     #[test]
@@ -176,21 +157,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BLT_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BLT_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = 0x2;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1001);
+        assert_eq!(engine.program_counter, 0x101);
     }
 
     #[test]
@@ -198,19 +177,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BLT_FUNCT3,
-                rs1: 2,
-                rs2: 1,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BLT_FUNCT3,
+            rs1: 2,
+            rs2: 1,
         };
 
         *engine.registers.get_mut(1).unwrap() = -0x2;
         *engine.registers.get_mut(2).unwrap() = -0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
@@ -220,21 +197,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BGE_FUNCT3,
-                rs1: 2,
-                rs2: 1,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BGE_FUNCT3,
+            rs1: 2,
+            rs2: 1,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = 0x2;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1001);
+        assert_eq!(engine.program_counter, 0x101);
     }
 
     #[test]
@@ -242,21 +217,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BGE_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BGE_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = 0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1001);
+        assert_eq!(engine.program_counter, 0x101);
     }
 
     #[test]
@@ -264,19 +237,16 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BGE_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BGE_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
-
         *engine.registers.get_mut(1).unwrap() = -0x2;
         *engine.registers.get_mut(2).unwrap() = -0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
@@ -286,21 +256,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BLTU_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BLTU_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = 0x2;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1001);
+        assert_eq!(engine.program_counter, 0x101);
     }
 
     #[test]
@@ -308,19 +276,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BLTU_FUNCT3,
-                rs1: 2,
-                rs2: 1,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BLTU_FUNCT3,
+            rs1: 2,
+            rs2: 1,
         };
 
         *engine.registers.get_mut(1).unwrap() = -0x2;
         *engine.registers.get_mut(2).unwrap() = -0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
@@ -330,21 +296,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BGEU_FUNCT3,
-                rs1: 2,
-                rs2: 1,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BGEU_FUNCT3,
+            rs1: 2,
+            rs2: 1,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = -0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1001);
+        assert_eq!(engine.program_counter, 0x101);
     }
 
     #[test]
@@ -352,21 +316,19 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BGEU_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BGEU_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = 0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.program_counter, 0x1001);
+        assert_eq!(engine.program_counter, 0x101);
     }
 
     #[test]
@@ -374,19 +336,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let branch = Branch {
-            ty: TypeB {
-                imm: 0x1000,
-                funct3: BGEU_FUNCT3,
-                rs1: 1,
-                rs2: 2,
-            },
+        let branch = TypeB {
+            imm: 0x100,
+            funct3: BGEU_FUNCT3,
+            rs1: 1,
+            rs2: 2,
         };
 
         *engine.registers.get_mut(1).unwrap() = 0x1;
         *engine.registers.get_mut(2).unwrap() = -0x1;
 
-        let result = branch.execute(&mut engine);
+        let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }

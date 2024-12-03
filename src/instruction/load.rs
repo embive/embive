@@ -1,7 +1,7 @@
 use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeI;
-use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
 
 const LB_FUNCT3: u8 = 0b000;
@@ -13,26 +13,17 @@ const LHU_FUNCT3: u8 = 0b101;
 /// Load OpCode
 /// Instructions: Lb, Lh, Lw, Lbu, Lhu
 /// Format: I-Type.
-pub struct Load {
-    ty: TypeI,
-}
-
-impl<M: Memory> Opcode<M> for Load {
-    #[inline(always)]
-    fn decode(data: u32) -> impl Instruction<M> {
-        Self {
-            ty: TypeI::from(data),
-        }
-    }
-}
+pub struct Load {}
 
 impl<M: Memory> Instruction<M> for Load {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
-        let rs1 = engine.registers.get(self.ty.rs1)?;
+    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+        let inst = TypeI::from(data);
 
-        let address = (rs1 as u32).wrapping_add_signed(self.ty.imm);
-        let result = match self.ty.funct3 {
+        let rs1 = engine.registers.get(inst.rs1)?;
+
+        let address = (rs1 as u32).wrapping_add_signed(inst.imm);
+        let result = match inst.funct3 {
             LB_FUNCT3 => i8::from_le_bytes(engine.memory.load(address)?) as i32,
             LH_FUNCT3 => i16::from_le_bytes(engine.memory.load(address)?) as i32,
             LW_FUNCT3 => i32::from_le_bytes(engine.memory.load(address)?),
@@ -42,7 +33,7 @@ impl<M: Memory> Instruction<M> for Load {
         };
 
         // Store the result in the destination register
-        let rd = engine.registers.get_mut(self.ty.rd)?;
+        let rd = engine.registers.get_mut(inst.rd)?;
         *rd = result;
 
         // Go to next instruction
@@ -68,17 +59,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lb = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x1,
-                funct3: LB_FUNCT3,
-            },
+        let lb = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x1,
+            funct3: LB_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lb.execute(&mut engine);
+        let result = Load::decode_execute(lb.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x12);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -91,17 +80,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lb = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x1,
-                funct3: LB_FUNCT3,
-            },
+        let lb = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x1,
+            funct3: LB_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lb.execute(&mut engine);
+        let result = Load::decode_execute(lb.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -0x12);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -115,17 +102,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lh = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x1,
-                funct3: LH_FUNCT3,
-            },
+        let lh = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x1,
+            funct3: LH_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lh.execute(&mut engine);
+        let result = Load::decode_execute(lh.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x3412);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -137,17 +122,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lh = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x0,
-                funct3: LH_FUNCT3,
-            },
+        let lh = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x0,
+            funct3: LH_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lh.execute(&mut engine);
+        let result = Load::decode_execute(lh.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -28098);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -163,17 +146,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lw = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x1,
-                funct3: LW_FUNCT3,
-            },
+        let lw = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x1,
+            funct3: LW_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lw.execute(&mut engine);
+        let result = Load::decode_execute(lw.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x78563412);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -185,17 +166,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lw = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x0,
-                funct3: LW_FUNCT3,
-            },
+        let lw = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x0,
+            funct3: LW_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lw.execute(&mut engine);
+        let result = Load::decode_execute(lw.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -19088744);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -208,17 +187,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lbu = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x1,
-                funct3: LBU_FUNCT3,
-            },
+        let lbu = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x1,
+            funct3: LBU_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lbu.execute(&mut engine);
+        let result = Load::decode_execute(lbu.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x12);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -231,17 +208,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lbu = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x1,
-                funct3: LBU_FUNCT3,
-            },
+        let lbu = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x1,
+            funct3: LBU_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lbu.execute(&mut engine);
+        let result = Load::decode_execute(lbu.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(
             *engine.registers.get_mut(1).unwrap(),
@@ -258,17 +233,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lhu = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x1,
-                funct3: LHU_FUNCT3,
-            },
+        let lhu = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x1,
+            funct3: LHU_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lhu.execute(&mut engine);
+        let result = Load::decode_execute(lhu.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x3412);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -280,17 +253,15 @@ mod tests {
 
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let lhu = Load {
-            ty: TypeI {
-                rd: 1,
-                rs1: 2,
-                imm: 0x0,
-                funct3: LHU_FUNCT3,
-            },
+        let lhu = TypeI {
+            rd: 1,
+            rs1: 2,
+            imm: 0x0,
+            funct3: LHU_FUNCT3,
         };
         *engine.registers.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = lhu.execute(&mut engine);
+        let result = Load::decode_execute(lhu.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(
             *engine.registers.get_mut(1).unwrap(),

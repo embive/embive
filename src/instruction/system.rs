@@ -1,7 +1,7 @@
 use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeI;
-use crate::instruction::{Instruction, Opcode};
+use crate::instruction::Instruction;
 use crate::memory::Memory;
 
 use super::INSTRUCTION_SIZE;
@@ -14,25 +14,16 @@ const EBREAK_ECALL_FUNCT3: u8 = 0b000;
 /// System OpCode
 /// Format: I-Type.
 /// Action: Halt
-pub struct System {
-    ty: TypeI,
-}
-
-impl<M: Memory> Opcode<M> for System {
-    #[inline(always)]
-    fn decode(data: u32) -> impl Instruction<M> {
-        Self {
-            ty: TypeI::from(data),
-        }
-    }
-}
+pub struct System {}
 
 impl<M: Memory> Instruction<M> for System {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
-        let ret = match self.ty.funct3 {
+    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+        let inst = TypeI::from(data);
+
+        let ret = match inst.funct3 {
             EBREAK_ECALL_FUNCT3 => {
-                match self.ty.imm {
+                match inst.imm {
                     ECALL_IMM => engine.syscall().map(|_| true), // Execute the syscall function (ecall)
                     EBREAK_IMM => Ok(false),                     // Halt the execution (ebreak)
                     _ => Err(EmbiveError::InvalidInstruction),
@@ -63,16 +54,14 @@ mod tests {
     fn test_ebreak() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let misc_mem = System {
-            ty: TypeI {
-                rd: 0,
-                rs1: 0,
-                imm: 0x1,
-                funct3: 0,
-            },
+        let misc_mem = TypeI {
+            rd: 0,
+            rs1: 0,
+            imm: 0x1,
+            funct3: 0,
         };
 
-        let result = misc_mem.execute(&mut engine);
+        let result = System::decode_execute(misc_mem.into(), &mut engine);
         assert_eq!(result, Ok(false));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -81,16 +70,14 @@ mod tests {
     fn test_ecall_error() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let misc_mem = System {
-            ty: TypeI {
-                rd: 0,
-                rs1: 0,
-                imm: 0x0,
-                funct3: 0,
-            },
+        let misc_mem = TypeI {
+            rd: 0,
+            rs1: 0,
+            imm: 0x0,
+            funct3: 0,
         };
 
-        let result = misc_mem.execute(&mut engine);
+        let result = System::decode_execute(misc_mem.into(), &mut engine);
         assert_eq!(result, Err(EmbiveError::NoSyscallFunction));
     }
 
@@ -126,16 +113,14 @@ mod tests {
         *engine.registers.get_mut(Register::A6 as usize).unwrap() = 6;
         *engine.registers.get_mut(Register::A7 as usize).unwrap() = -1;
 
-        let misc_mem = System {
-            ty: TypeI {
-                rd: 0,
-                rs1: 0,
-                imm: 0x0,
-                funct3: 0,
-            },
+        let misc_mem = TypeI {
+            rd: 0,
+            rs1: 0,
+            imm: 0x0,
+            funct3: 0,
         };
 
-        let result = misc_mem.execute(&mut engine);
+        let result = System::decode_execute(misc_mem.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.registers.get(Register::A0 as usize), Ok(0));
         assert_eq!(engine.registers.get(Register::A1 as usize), Ok(21));

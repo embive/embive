@@ -23,6 +23,16 @@ impl From<u32> for TypeR {
     }
 }
 
+impl From<TypeR> for u32 {
+    fn from(ty: TypeR) -> u32 {
+        ((ty.rd as u32) << 7)
+            | (((ty.funct10 as u32) & 0b111) << 12)
+            | (((ty.funct10 as u32) & (0b111_1111 << 3)) << 22)
+            | ((ty.rs1 as u32) << 15)
+            | ((ty.rs2 as u32) << 20)
+    }
+}
+
 /// I-Type Instruction Format
 #[doc = include_str!("../../assets/formats/i-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -45,6 +55,15 @@ impl From<u32> for TypeI {
     }
 }
 
+impl From<TypeI> for u32 {
+    fn from(ty: TypeI) -> u32 {
+        ((ty.rd as u32) << 7)
+            | ((ty.funct3 as u32) << 12)
+            | ((ty.rs1 as u32) << 15)
+            | ((ty.imm as u32 & 0b1111_1111_1111) << 20)
+    }
+}
+
 /// S-Type Instruction Format
 #[doc = include_str!("../../assets/formats/s-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -64,6 +83,16 @@ impl From<u32> for TypeS {
             rs1: ((inst >> 15) & 0b1_1111) as usize,
             rs2: ((inst >> 20) & 0b1_1111) as usize,
         }
+    }
+}
+
+impl From<TypeS> for u32 {
+    fn from(ty: TypeS) -> u32 {
+        ((ty.imm as u32 & 0b1_1111) << 7)
+            | (((ty.imm as u32) & (0b111_1111 << 5)) << 20)
+            | ((ty.funct3 as u32) << 12)
+            | ((ty.rs1 as u32) << 15)
+            | ((ty.rs2 as u32) << 20)
     }
 }
 
@@ -93,6 +122,18 @@ impl From<u32> for TypeB {
     }
 }
 
+impl From<TypeB> for u32 {
+    fn from(ty: TypeB) -> u32 {
+        ((ty.imm as u32 & 0b1_1110) << 7)
+            | (((ty.imm as u32) & (0b1 << 11)) >> 4)
+            | (((ty.imm as u32) & (0b11_1111 << 5)) << 20)
+            | (((ty.imm as u32) & (0b1 << 12)) << 19)
+            | ((ty.funct3 as u32) << 12)
+            | ((ty.rs1 as u32) << 15)
+            | ((ty.rs2 as u32) << 20)
+    }
+}
+
 /// U-Type Instruction Format
 #[doc = include_str!("../../assets/formats/u-type.svg")]
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -108,6 +149,12 @@ impl From<u32> for TypeU {
             rd: ((inst >> 7) & 0b11111) as usize,
             imm: (inst & (0b1111_1111_1111_1111_1111 << 12)) as i32,
         }
+    }
+}
+
+impl From<TypeU> for u32 {
+    fn from(ty: TypeU) -> u32 {
+        ((ty.rd as u32) << 7) | (ty.imm as u32 & (0b1111_1111_1111_1111_1111 << 12))
     }
 }
 
@@ -133,14 +180,34 @@ impl From<u32> for TypeJ {
     }
 }
 
+impl From<TypeJ> for u32 {
+    fn from(ty: TypeJ) -> u32 {
+        ((ty.rd as u32) << 7)
+            | ((ty.imm as u32) & (0b1111_1111 << 12))
+            | (((ty.imm as u32) & (0b1 << 11)) << 9)
+            | (((ty.imm as u32) & (0b11_1111_1111 << 1)) << 20)
+            | (((ty.imm as u32) & (0b1 << 20)) << 11)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn test_from_into<T>(inst: T)
+    where
+        T: Into<u32> + From<u32> + PartialEq + std::fmt::Debug + Copy,
+    {
+        let into: u32 = inst.into();
+        let from: T = T::from(into);
+        assert_eq!(inst, from);
+    }
 
     #[test]
     fn test_type_r() {
         let inst = u32::from_le(0b01000000001100100101000010110011); // sra x1, x4, x3
         let parsed = TypeR::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.rd, 1);
         assert_eq!(parsed.rs1, 4);
@@ -152,6 +219,7 @@ mod tests {
     fn test_type_i_negative() {
         let inst = u32::from_le(0b11000001100000010000000110010011); // addi x3, x2, -1000
         let parsed = TypeI::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.rd, 3);
         assert_eq!(parsed.funct3, 0);
@@ -163,6 +231,7 @@ mod tests {
     fn test_type_i_positive() {
         let inst = u32::from_le(0b01111111101000000100000010010011); // xori x1, x0, 2042
         let parsed = TypeI::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.rd, 1);
         assert_eq!(parsed.funct3, 4);
@@ -174,6 +243,7 @@ mod tests {
     fn test_type_s_negative() {
         let inst = u32::from_le(0b11100000000100010001101100100011); // sh x1, -490(x2)
         let parsed = TypeS::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.imm, -490);
         assert_eq!(parsed.funct3, 1);
@@ -185,6 +255,7 @@ mod tests {
     fn test_type_s_positive() {
         let inst = u32::from_le(0b00011110000100010001010100100011); // sh x1, 490(x2)
         let parsed = TypeS::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.imm, 490);
         assert_eq!(parsed.funct3, 1);
@@ -196,6 +267,7 @@ mod tests {
     fn test_type_b_negative() {
         let inst = u32::from_le(0b10101100100000101001010011100011); // bne x5, x8, -1336
         let parsed = TypeB::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.imm, -1336);
         assert_eq!(parsed.funct3, 1);
@@ -207,6 +279,7 @@ mod tests {
     fn test_type_b_positive() {
         let inst = u32::from_le(0b00101100100000101001010001100011); // bne x5, x8, 712
         let parsed = TypeB::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.imm, 712);
         assert_eq!(parsed.funct3, 1);
@@ -218,6 +291,7 @@ mod tests {
     fn test_type_u_negative() {
         let inst = u32::from_le(0b11110000001000001111000110110111); // lui x3, -65009
         let parsed = TypeU::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.imm, -65009 << 12);
         assert_eq!(parsed.rd, 3);
@@ -227,6 +301,7 @@ mod tests {
     fn test_type_u_positive() {
         let inst = u32::from_le(0b00010000001000001111000110110111); // lui x3, 66063
         let parsed = TypeU::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.imm, 66063 << 12);
         assert_eq!(parsed.rd, 3);
@@ -236,6 +311,7 @@ mod tests {
     fn test_type_j_negative() {
         let inst = u32::from_le(0b10101100001100011011000111101111); // jal x3, -935230
         let parsed = TypeJ::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.imm, -935230);
         assert_eq!(parsed.rd, 3);
@@ -245,6 +321,7 @@ mod tests {
     fn test_type_j_positive() {
         let inst = u32::from_le(0b01011100001100011011000111101111); // jal x3, 114114
         let parsed = TypeJ::from(inst);
+        test_from_into(parsed);
 
         assert_eq!(parsed.imm, 114114);
         assert_eq!(parsed.rd, 3);

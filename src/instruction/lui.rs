@@ -1,34 +1,25 @@
 use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeU;
-use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
 
 /// Load Upper Immediate
 /// Both an Opcode and an Instruction
 /// Format: U-Type.
 /// Action: rd = imm
-pub struct Lui {
-    ty: TypeU,
-}
-
-impl<M: Memory> Opcode<M> for Lui {
-    #[inline(always)]
-    fn decode(data: u32) -> impl Instruction<M> {
-        Self {
-            ty: TypeU::from(data),
-        }
-    }
-}
+pub struct Lui {}
 
 impl<M: Memory> Instruction<M> for Lui {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
-        if self.ty.rd != 0 {
+    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+        let inst = TypeU::from(data);
+
+        if inst.rd != 0 {
             // rd = 0 means its a HINT instruction, just ignore it.
             // Load the immediate value into the register.
-            let reg = engine.registers.get_mut(self.ty.rd)?;
-            *reg = self.ty.imm;
+            let reg = engine.registers.get_mut(inst.rd)?;
+            *reg = inst.imm;
         }
 
         // Go to next instruction
@@ -50,11 +41,9 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         engine.program_counter = 0x1;
-        let lui = Lui {
-            ty: TypeU { rd: 1, imm: 0x1000 },
-        };
+        let lui = TypeU { rd: 1, imm: 0x1000 };
 
-        let result = lui.execute(&mut engine);
+        let result = Lui::decode_execute(lui.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1000);
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);

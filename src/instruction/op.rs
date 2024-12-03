@@ -1,7 +1,7 @@
 use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeR;
-use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
 
 const MUL_ADD_SUB_FUNCT3: u8 = 0b000;
@@ -49,29 +49,20 @@ const MULHU_FUNCT10: u16 = ((M_EXT_FUNCT7 as u16) << 3) | MULHU_SLTU_FUNCT3 as u
 /// Instructions: Add, Sub, Xor, Or, And, Sll, Srl, Sra, Slt, Sltu
 /// Instructions (M Extension): Mul, Mulh, Mulhsu, Mulhu, Div, Divu, Rem, Remu
 /// Format: R-Type.
-pub struct Op {
-    ty: TypeR,
-}
-
-impl<M: Memory> Opcode<M> for Op {
-    #[inline(always)]
-    fn decode(data: u32) -> impl Instruction<M> {
-        Self {
-            ty: TypeR::from(data),
-        }
-    }
-}
+pub struct Op {}
 
 impl<M: Memory> Instruction<M> for Op {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
-        let rs1 = engine.registers.get(self.ty.rs1)?;
-        let rs2 = engine.registers.get(self.ty.rs2)?;
+    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+        let inst = TypeR::from(data);
 
-        if self.ty.rd != 0 {
+        let rs1 = engine.registers.get(inst.rs1)?;
+        let rs2 = engine.registers.get(inst.rs2)?;
+
+        if inst.rd != 0 {
             // rd = 0 means its a HINT instruction, just ignore it.
-            let rd = engine.registers.get_mut(self.ty.rd)?;
-            *rd = match self.ty.funct10 {
+            let rd = engine.registers.get_mut(inst.rd)?;
+            *rd = match inst.funct10 {
                 ADD_FUNCT10 => rs1.wrapping_add(rs2),        // Add
                 SLL_FUNCT10 => rs1.wrapping_shl(rs2 as u32), // Sll (Logical shift left, fill with zero)
                 SLT_FUNCT10 => (rs1 < rs2) as u8 as i32,     // Slt (Set less than)
@@ -145,19 +136,17 @@ mod tests {
     fn test_rd_0() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 0,
-                rs1: 2,
-                rs2: 3,
-                funct10: ADD_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 0,
+            rs1: 2,
+            rs2: 3,
+            funct10: ADD_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = 10;
         *engine.registers.get_mut(3).unwrap() = 20;
         let start_regs = engine.registers;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(start_regs, engine.registers);
         assert_eq!(result, Ok(true));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -167,18 +156,16 @@ mod tests {
     fn test_add() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: ADD_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: ADD_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = 10;
         *engine.registers.get_mut(3).unwrap() = 20;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 30);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -188,18 +175,16 @@ mod tests {
     fn test_add_wrapping() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: ADD_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: ADD_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = i32::MAX;
         *engine.registers.get_mut(3).unwrap() = 1;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), i32::MIN);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -209,18 +194,16 @@ mod tests {
     fn test_sub() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SUB_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SUB_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = 20;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 10);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -230,18 +213,16 @@ mod tests {
     fn test_sub_wrapping() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SUB_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SUB_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = i32::MIN;
         *engine.registers.get_mut(3).unwrap() = 1;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), i32::MAX);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -251,19 +232,17 @@ mod tests {
     fn test_xor() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: XOR_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: XOR_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 0b1010;
         *engine.registers.get_mut(3).unwrap() = 0b1100;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b0110);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -273,19 +252,17 @@ mod tests {
     fn test_or() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: OR_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: OR_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 0b1010;
         *engine.registers.get_mut(3).unwrap() = 0b1100;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b1110);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -295,19 +272,17 @@ mod tests {
     fn test_and() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: AND_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: AND_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 0b1010;
         *engine.registers.get_mut(3).unwrap() = 0b1100;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b1000);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -317,19 +292,17 @@ mod tests {
     fn test_sll() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLL_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLL_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 0b1010;
         *engine.registers.get_mut(3).unwrap() = 2;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b101000);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -339,19 +312,17 @@ mod tests {
     fn test_srl() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SRL_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SRL_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 0b1010;
         *engine.registers.get_mut(3).unwrap() = 2;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b10);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -361,19 +332,17 @@ mod tests {
     fn test_srl_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SRL_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SRL_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 0xBA987654u32 as i32;
         *engine.registers.get_mut(3).unwrap() = 28;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0xB);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -383,19 +352,17 @@ mod tests {
     fn test_sra() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SRA_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SRA_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 0b1010;
         *engine.registers.get_mut(3).unwrap() = 2;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0b10);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -405,19 +372,17 @@ mod tests {
     fn test_sra_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SRA_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SRA_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 0xBA987654u32 as i32;
         *engine.registers.get_mut(3).unwrap() = 28;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0xFFFFFFFBu32 as i32);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -427,19 +392,17 @@ mod tests {
     fn test_slt_lower() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLT_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLT_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 10;
         *engine.registers.get_mut(3).unwrap() = 20;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -449,19 +412,17 @@ mod tests {
     fn test_slt_greater() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLT_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLT_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 20;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -471,19 +432,17 @@ mod tests {
     fn test_slt_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLT_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLT_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 20;
         *engine.registers.get_mut(3).unwrap() = 20;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -493,19 +452,17 @@ mod tests {
     fn test_slt_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLT_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLT_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 10;
         *engine.registers.get_mut(3).unwrap() = -20;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -515,19 +472,17 @@ mod tests {
     fn test_sltu_lower() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLTU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLTU_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 10;
         *engine.registers.get_mut(3).unwrap() = 20;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -537,19 +492,17 @@ mod tests {
     fn test_sltu_greater() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLTU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLTU_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 20;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -559,19 +512,17 @@ mod tests {
     fn test_sltu_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLTU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLTU_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 10;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -581,19 +532,17 @@ mod tests {
     fn test_sltu_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: SLTU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: SLTU_FUNCT10,
         };
 
         *engine.registers.get_mut(2).unwrap() = 10;
         *engine.registers.get_mut(3).unwrap() = -20;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -604,18 +553,16 @@ mod tests {
     fn test_mul() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: MUL_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: MUL_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = 10;
         *engine.registers.get_mut(3).unwrap() = 20;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 200);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -626,18 +573,16 @@ mod tests {
     fn test_mul_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: MUL_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: MUL_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = -10;
         *engine.registers.get_mut(3).unwrap() = -2;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 20);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -648,18 +593,16 @@ mod tests {
     fn test_mulh() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: MULH_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: MULH_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = i32::MAX;
         *engine.registers.get_mut(3).unwrap() = 2;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(
             *engine.registers.get_mut(1).unwrap(),
@@ -673,18 +616,16 @@ mod tests {
     fn test_mulhsu() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: MULHSU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: MULHSU_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = i32::MAX;
         *engine.registers.get_mut(3).unwrap() = 2;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(
             *engine.registers.get_mut(1).unwrap(),
@@ -698,18 +639,16 @@ mod tests {
     fn test_mulhsu_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: MULHSU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: MULHSU_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = -2;
         *engine.registers.get_mut(3).unwrap() = u32::MAX as i32;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(
             *engine.registers.get_mut(1).unwrap(),
@@ -723,18 +662,16 @@ mod tests {
     fn test_mulhu() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: MULHU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: MULHU_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = i32::MAX;
         *engine.registers.get_mut(3).unwrap() = 2;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(
             *engine.registers.get_mut(1).unwrap(),
@@ -748,18 +685,16 @@ mod tests {
     fn test_div() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: DIV_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: DIV_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = 20;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 2);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -770,18 +705,16 @@ mod tests {
     fn test_div_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: DIV_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: DIV_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = -20;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -2);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -792,18 +725,16 @@ mod tests {
     fn test_divu() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: DIVU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: DIVU_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = u32::MAX as i32;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(
             *engine.registers.get_mut(1).unwrap(),
@@ -817,18 +748,16 @@ mod tests {
     fn test_rem() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: REM_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: REM_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = 101;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -839,18 +768,16 @@ mod tests {
     fn test_rem_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: REM_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: REM_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = -101;
         *engine.registers.get_mut(3).unwrap() = 10;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -861,18 +788,16 @@ mod tests {
     fn test_remu() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let op = Op {
-            ty: TypeR {
-                rd: 1,
-                rs1: 2,
-                rs2: 3,
-                funct10: REMU_FUNCT10,
-            },
+        let op = TypeR {
+            rd: 1,
+            rs1: 2,
+            rs2: 3,
+            funct10: REMU_FUNCT10,
         };
         *engine.registers.get_mut(2).unwrap() = u32::MAX as i32;
         *engine.registers.get_mut(3).unwrap() = 1;
 
-        let result = op.execute(&mut engine);
+        let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(*engine.registers.get_mut(1).unwrap(), (u32::MAX % 1) as i32);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);

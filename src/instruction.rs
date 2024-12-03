@@ -50,31 +50,20 @@ const OP_OPCODE: u8 = 0b011_0011;
 const MISC_MEM_OPCODE: u8 = 0b000_1111;
 const SYSTEM_OPCODE: u8 = 0b111_0011;
 
-/// Opcode trait. All opcodes must implement this trait.
-trait Opcode<M: Memory> {
-    /// Decode the instruction.
+/// Instruction trait. All instructions must implement this trait.
+trait Instruction<M: Memory> {
+    /// Decode and Execute the instruction.
     ///
     /// Arguments:
     /// - `data`: `u32` value representing the instruction.
-    ///
-    /// Returns:
-    /// - `impl Instruction`: The decoded instruction.
-    fn decode(data: u32) -> impl Instruction<M>;
-}
-
-/// Instruction trait. All instructions must implement this trait.
-trait Instruction<M: Memory> {
-    /// Execute the instruction.
-    ///
-    /// Arguments:
-    ///    `engine`: Mutable pointer to embive engine.
+    /// - `engine`: Mutable pointer to embive engine.
     ///
     /// Returns:
     /// - `Ok(bool)`: Instruction executed successfully:
     ///     - `True`: Should continue execution.
     ///     - `False`: Should halt.
     /// - `Err(EmbiveError)`: Failed to execute instruction.
-    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError>;
+    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError>;
 }
 
 /// Decode and execute an instruction.
@@ -89,24 +78,24 @@ trait Instruction<M: Memory> {
 ///     - `False`: Should halt.
 /// - `Err(EmbiveError)`: Failed to decode or execute instruction.
 #[inline]
-pub(crate) fn decode_and_execute<M: Memory>(
+pub(crate) fn decode_execute<M: Memory>(
     engine: &mut Engine<M>,
     data: u32,
 ) -> Result<bool, EmbiveError> {
     match (data & 0x7F) as u8 {
-        LOAD_OPCODE => Load::decode(data).execute(engine),
-        MISC_MEM_OPCODE => MiscMem::decode(data).execute(engine),
-        OP_IMM_OPCODE => OpImm::decode(data).execute(engine),
-        AUI_PC_OPCODE => Auipc::decode(data).execute(engine),
-        STORE_OPCODE => Store::decode(data).execute(engine),
+        LOAD_OPCODE => Load::decode_execute(data, engine),
+        MISC_MEM_OPCODE => MiscMem::decode_execute(data, engine),
+        OP_IMM_OPCODE => OpImm::decode_execute(data, engine),
+        AUI_PC_OPCODE => Auipc::decode_execute(data, engine),
+        STORE_OPCODE => Store::decode_execute(data, engine),
         #[cfg(feature = "a_extension")]
-        AMO_OPCODE => Amo::decode(data).execute(engine),
-        OP_OPCODE => Op::decode(data).execute(engine),
-        LUI_OPCODE => Lui::decode(data).execute(engine),
-        BRANCH_OPCODE => Branch::decode(data).execute(engine),
-        JALR_OPCODE => Jalr::decode(data).execute(engine),
-        JAL_OPCODE => Jal::decode(data).execute(engine),
-        SYSTEM_OPCODE => System::decode(data).execute(engine),
+        AMO_OPCODE => Amo::decode_execute(data, engine),
+        OP_OPCODE => Op::decode_execute(data, engine),
+        LUI_OPCODE => Lui::decode_execute(data, engine),
+        BRANCH_OPCODE => Branch::decode_execute(data, engine),
+        JALR_OPCODE => Jalr::decode_execute(data, engine),
+        JAL_OPCODE => Jal::decode_execute(data, engine),
+        SYSTEM_OPCODE => System::decode_execute(data, engine),
         _ => Err(EmbiveError::InvalidInstruction),
     }
 }
@@ -120,7 +109,7 @@ mod tests {
     fn test_invalid_instruction() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let result = super::decode_and_execute(&mut engine, 0);
+        let result = super::decode_execute(&mut engine, 0);
         assert_eq!(result, Err(EmbiveError::InvalidInstruction));
     }
 }

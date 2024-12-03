@@ -1,7 +1,7 @@
 use crate::engine::Engine;
 use crate::error::EmbiveError;
 use crate::instruction::format::TypeR;
-use crate::instruction::{Instruction, Opcode, INSTRUCTION_SIZE};
+use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
 
 const WORD_WIDTH: u8 = 0b010;
@@ -21,32 +21,23 @@ const AMOMAXU_FUNCT5: u8 = 0b11100;
 /// Atomic Memory Operations
 /// Instructions: LR, SC, AMOSWAP, AMOADD, AMOXOR, AMOAND, AMOOR, AMOMIN, AMOMAX, AMOMINU, AMOMAXU
 /// Format: R-Type.
-pub struct Amo {
-    ty: TypeR,
-}
-
-impl<M: Memory> Opcode<M> for Amo {
-    #[inline(always)]
-    fn decode(data: u32) -> impl Instruction<M> {
-        Self {
-            ty: TypeR::from(data),
-        }
-    }
-}
+pub struct Amo {}
 
 impl<M: Memory> Instruction<M> for Amo {
     #[inline(always)]
-    fn execute(&self, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
-        let rs1 = engine.registers.get(self.ty.rs1)? as u32;
-        let rs2 = engine.registers.get(self.ty.rs2)?;
+    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+        let inst = TypeR::from(data);
+
+        let rs1 = engine.registers.get(inst.rs1)? as u32;
+        let rs2 = engine.registers.get(inst.rs2)?;
         let result;
 
         // Check if width is supported
-        match (self.ty.funct10 & 0b111) as u8 {
+        match (inst.funct10 & 0b111) as u8 {
             WORD_WIDTH => {
                 // 32 bits
                 // Match instruction type (We ignore ordering as it isn't applicable)
-                match (self.ty.funct10 >> 5) as u8 {
+                match (inst.funct10 >> 5) as u8 {
                     AMOADD_FUNCT5 => {
                         // Atomic Add (rd = mem[rs1]; mem[rs1] += rs2)
                         result = i32::from_le_bytes(engine.memory.load(rs1)?);
@@ -129,8 +120,8 @@ impl<M: Memory> Instruction<M> for Amo {
         }
 
         // Store the result in the destination register
-        if self.ty.rd != 0 {
-            let rd = engine.registers.get_mut(self.ty.rd)?;
+        if inst.rd != 0 {
+            let rd = engine.registers.get_mut(inst.rd)?;
             *rd = result;
         }
 
@@ -154,19 +145,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOADD_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOADD_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 2;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
@@ -180,19 +169,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOSWAP_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOSWAP_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 2;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
@@ -206,19 +193,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((LR_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((LR_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 2;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
@@ -232,13 +217,11 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((SC_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((SC_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 2;
@@ -246,7 +229,7 @@ mod tests {
 
         engine.memory_reservation = Some((RAM_OFFSET as u32, 14));
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
@@ -260,19 +243,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOXOR_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOXOR_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 2;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
@@ -286,19 +267,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOOR_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOOR_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 3;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
@@ -312,19 +291,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOAND_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOAND_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 3;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
@@ -338,19 +315,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOMIN_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOMIN_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 3;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -14);
@@ -364,19 +339,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOMAX_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOMAX_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 3;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -14);
@@ -390,19 +363,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOMINU_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOMINU_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 3;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -14);
@@ -416,19 +387,17 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut ram);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        let amo = Amo {
-            ty: TypeR {
-                rd: 1,
-                rs1: 3,
-                rs2: 2,
-                funct10: WORD_WIDTH as u16 | ((AMOMAXU_FUNCT5 as u16) << 5),
-            },
+        let amo = TypeR {
+            rd: 1,
+            rs1: 3,
+            rs2: 2,
+            funct10: WORD_WIDTH as u16 | ((AMOMAXU_FUNCT5 as u16) << 5),
         };
 
         *engine.registers.get_mut(2).unwrap() = 3;
         *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
-        let result = amo.execute(&mut engine);
+        let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
         assert_eq!(*engine.registers.get_mut(1).unwrap(), -14);
