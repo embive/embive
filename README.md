@@ -83,13 +83,14 @@ fn main() {
 ```
 
 ## Roadmap
-- [ ] Fully support `RV32IMACZifencei`
+- [ ] Fully support `RV32IMAZifencei_Zicsr` (machine level)
     - [x] RV32I Base Integer Instruction Set
     - [x] M Extension (Multiplication and Division Instructions)
     - [x] Zifencei
         - Implemented as a no-operation as it isn't applicable (Single HART, no cache, no memory-mapped devices, etc.).
     - [x] A Extension (Atomic Instructions)
-    - [ ] C Extension (Compressed Instructions)
+    - [ ] Zicsr
+        - Implement the machine-level CSRs (Needed for supporting callbacks)
 - [x] System Calls
     - Function calls from interpreted to native code
 - [x] Resource limiter
@@ -111,6 +112,16 @@ support custom rounding modes nor does it expose the IEEE exception flags.
 
 As the soft-float libraries available do not satisfy my requirements (must be portable, safe, no_std, and
 support all rounding modes and exception flags), this feature will be halted until (if) an alternative is found.
+
+## What about Compressed Instructions?
+RISC-V Compressed extension adds 16-bit instruction support for the most used operations, which can decrease the binary size in about 25%.  
+
+While smaller binaries are always welcomed, the compressed extension has a far more complex decoding process as 
+the instruction format cannot be know just by the opcode. Beyond that, some instructions can only be distinguished 
+after decoding almost all the data, even in cases where the format is very different between them (ex: C.ANDI and C.SUB).
+
+As handling this would decrease the performance of Embive, as well as make the future JIT/AOT feature a lot more 
+difficult, the RVC extension won't be supported (at least for now).
 
 ## Minimum supported Rust version (MSRV)
 Embive is guaranteed to compile on stable Rust 1.81 and up.
