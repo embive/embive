@@ -59,16 +59,6 @@ impl SliceMemory<'_> {
 }
 
 impl Memory for SliceMemory<'_> {
-    /// Load `N` bytes from memory address.
-    /// Memory address can be from code (0x0x00000000) or RAM ([`RAM_OFFSET`]).
-    /// RISC-V is little-endian, always use `to_le_bytes()` and `from_le_bytes()`.
-    ///
-    /// Arguments:
-    /// - `address`: Memory address to get (program and RAM).
-    ///
-    /// Returns:
-    /// - `Ok([u8; N])`: Bytes at the memory address.
-    /// - `Err(EmbiveError)`: Memory address and/or `N` are out of bounds.
     fn load<const N: usize>(&self, address: u32) -> Result<[u8; N], EmbiveError> {
         // Check if the address is in RAM or code.
         if address >= RAM_OFFSET {
@@ -91,17 +81,6 @@ impl Memory for SliceMemory<'_> {
         }
     }
 
-    /// Store `N` bytes to memory address.
-    /// Memory address can only be from RAM ([`RAM_OFFSET`]).
-    /// RISC-V is little-endian, always use `to_le_bytes()` and `from_le_bytes()`.
-    ///
-    /// Arguments:
-    /// - `address`: The memory address to store (only RAM).
-    /// - `data`: Bytes to store.
-    ///
-    /// Returns:
-    /// - `Ok(())`: Bytes were stored successfully.
-    /// - `Err(EmbiveError)`: Memory address and/or `N` are out of bounds.
     fn store<const N: usize>(&mut self, address: u32, data: [u8; N]) -> Result<(), EmbiveError> {
         let address = address.wrapping_sub(RAM_OFFSET);
 

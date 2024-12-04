@@ -28,12 +28,34 @@ pub type SyscallFn<M> = fn(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut M) 
 
 /// Embive Engine Configuration Struct
 #[derive(Debug, PartialEq, Clone, Copy)]
+#[non_exhaustive]
 pub struct Config<M: Memory> {
     /// System call function (Called by `ecall` instruction).
     pub syscall_fn: Option<SyscallFn<M>>,
     /// Instruction limit. Yield when the limit is reached (0 = No limit).
     #[cfg(feature = "instruction_limit")]
     pub instruction_limit: u32,
+}
+
+impl<M: Memory> Config<M> {
+    /// Set the system call function and return the configuration.
+    ///
+    /// Arguments:
+    /// - `syscall_fn`: Optional system call function.
+    pub fn with_syscall_fn(mut self, syscall_fn: Option<SyscallFn<M>>) -> Self {
+        self.syscall_fn = syscall_fn;
+        self
+    }
+
+    /// Set the instruction limit and return the configuration.
+    ///
+    /// Arguments:
+    /// - `instruction_limit`: Instruction limit (0 = No limit).
+    #[cfg(feature = "instruction_limit")]
+    pub fn with_instruction_limit(mut self, instruction_limit: u32) -> Self {
+        self.instruction_limit = instruction_limit;
+        self
+    }
 }
 
 impl<M: Memory> Default for Config<M> {

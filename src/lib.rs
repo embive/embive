@@ -60,10 +60,7 @@
 //!     let mut memory = SliceMemory::new(code, &mut ram);
 //!
 //!     // Create engine config
-//!     let config = Config {
-//!         syscall_fn: Some(syscall),
-//!        ..Default::default()
-//!     };
+//!     let config = Config::default().with_syscall_fn(Some(syscall));
 //!
 //!     // Create engine & run it
 //!     let mut engine = Engine::new(&mut memory, config).unwrap();
