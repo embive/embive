@@ -18,7 +18,7 @@ impl<M: Memory> Instruction<M> for Lui {
         if inst.rd != 0 {
             // rd = 0 means its a HINT instruction, just ignore it.
             // Load the immediate value into the register.
-            let reg = engine.registers.get_mut(inst.rd)?;
+            let reg = engine.registers.cpu.get_mut(inst.rd)?;
             *reg = inst.imm;
         }
 
@@ -45,7 +45,7 @@ mod tests {
 
         let result = Lui::decode_execute(lui.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1000);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x1000);
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 }

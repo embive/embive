@@ -3,7 +3,7 @@
 use crate::error::EmbiveError;
 use crate::instruction::decode_execute;
 use crate::memory::Memory;
-use crate::register::{Register, Registers};
+use crate::registers::{CPURegister, Registers};
 
 /// Number of syscall arguments
 pub const SYSCALL_ARGS: usize = 7;
@@ -33,7 +33,6 @@ pub struct Config<M: Memory> {
     /// System call function (Called by `ecall` instruction).
     pub syscall_fn: Option<SyscallFn<M>>,
     /// Instruction limit. Yield when the limit is reached (0 = No limit).
-    #[cfg(feature = "instruction_limit")]
     pub instruction_limit: u32,
 }
 
@@ -51,7 +50,6 @@ impl<M: Memory> Config<M> {
     ///
     /// Arguments:
     /// - `instruction_limit`: Instruction limit (0 = No limit).
-    #[cfg(feature = "instruction_limit")]
     pub fn with_instruction_limit(mut self, instruction_limit: u32) -> Self {
         self.instruction_limit = instruction_limit;
         self
@@ -62,7 +60,6 @@ impl<M: Memory> Default for Config<M> {
     fn default() -> Self {
         Config {
             syscall_fn: None,
-            #[cfg(feature = "instruction_limit")]
             instruction_limit: 0,
         }
     }
@@ -96,7 +93,7 @@ impl<'a, M: Memory> Engine<'a, M> {
         // Create the engine
         Ok(Engine {
             program_counter: 0,
-            registers: Registers::new(),
+            registers: Default::default(),
             memory,
             config,
             #[cfg(feature = "a_extension")]
@@ -106,11 +103,11 @@ impl<'a, M: Memory> Engine<'a, M> {
 
     /// Reset the engine:
     /// - Program counter is reset to 0.
-    /// - Registers are reset to 0.
+    /// - CPU Registers are reset to 0.
     /// - Memory reservation is cleared.
     pub fn reset(&mut self) {
         self.program_counter = 0;
-        self.registers.reset();
+        self.registers = Default::default();
         #[cfg(feature = "a_extension")]
         {
             self.memory_reservation = None;
@@ -118,7 +115,7 @@ impl<'a, M: Memory> Engine<'a, M> {
     }
 
     /// Run the engine
-    /// If the `instruction_limit` feature is enabled, the engine will yield when the limit is reached.
+    /// If configured, the engine will yield when the instruction limit is reached.
     ///
     /// Returns:
     /// - `Ok(bool)`: Success, returns if should continue:
@@ -126,22 +123,19 @@ impl<'a, M: Memory> Engine<'a, M> {
     ///     - `False`: Stop running (halted, call `reset` prior to running again).
     /// - `Err(EmbiveError)`: Failed to run.
     pub fn run(&mut self) -> Result<bool, EmbiveError> {
-        #[cfg(feature = "instruction_limit")]
-        {
-            // Check if there is an instruction limit
-            if self.config.instruction_limit > 0 {
-                // Run the engine with an instruction limit
-                for _ in 0..self.config.instruction_limit {
-                    // Step through the program
-                    if !self.step()? {
-                        // Stop running
-                        return Ok(false);
-                    }
+        // Check if there is an instruction limit
+        if self.config.instruction_limit > 0 {
+            // Run the engine with an instruction limit
+            for _ in 0..self.config.instruction_limit {
+                // Step through the program
+                if !self.step()? {
+                    // Stop running
+                    return Ok(false);
                 }
-
-                // Yield
-                return Ok(true);
             }
+
+            // Yield
+            return Ok(true);
         }
 
         // No instruction limit
@@ -194,10 +188,10 @@ impl<'a, M: Memory> Engine<'a, M> {
     pub(crate) fn syscall(&mut self) -> Result<(), EmbiveError> {
         if let Some(syscall_fn) = self.config.syscall_fn {
             // Syscall Number
-            let nr = self.registers.inner[Register::A7 as usize];
+            let nr = self.registers.cpu.inner[CPURegister::A7 as usize];
 
             // Syscall Arguments
-            let args = self.registers.inner[Register::A0 as usize..]
+            let args = self.registers.cpu.inner[CPURegister::A0 as usize..]
                 .first_chunk()
                 // Unwrap is safe because the slice is guaranteed to have more than SYSCALL_ARGS elements.
                 .unwrap();
@@ -206,17 +200,17 @@ impl<'a, M: Memory> Engine<'a, M> {
             match syscall_fn(nr, args, self.memory) {
                 Ok(value) => {
                     // Clear error code
-                    self.registers.inner[Register::A0 as usize] = 0;
+                    self.registers.cpu.inner[CPURegister::A0 as usize] = 0;
 
                     // Set return value
-                    self.registers.inner[Register::A1 as usize] = value;
+                    self.registers.cpu.inner[CPURegister::A1 as usize] = value;
                 }
                 Err(error) => {
                     // Set error code
-                    self.registers.inner[Register::A0 as usize] = error;
+                    self.registers.cpu.inner[CPURegister::A0 as usize] = error;
 
                     // Clear return value
-                    self.registers.inner[Register::A1 as usize] = 0;
+                    self.registers.cpu.inner[CPURegister::A1 as usize] = 0;
                 }
             }
 
@@ -243,7 +237,6 @@ mod tests {
         assert_eq!(engine.program_counter, 0);
     }
 
-    #[cfg(feature = "instruction_limit")]
     #[test]
     fn test_instruction_limit() {
         let code = &[
@@ -274,7 +267,6 @@ mod tests {
         assert_eq!(engine.program_counter, 4 * 4);
     }
 
-    #[cfg(feature = "instruction_limit")]
     #[test]
     fn test_instruction_limit_zero() {
         let code = &[

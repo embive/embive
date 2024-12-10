@@ -19,7 +19,7 @@
 //! use embive::{
 //!     engine::{Config, Engine, SYSCALL_ARGS},
 //!     memory::{Memory, SliceMemory},
-//!     register::Register,
+//!     registers::CPURegister,
 //! };
 //!
 //! // A simple syscall implementation. Check [`embive::engine::SyscallFn`].
@@ -67,8 +67,14 @@
 //!     engine.run().unwrap();
 //!
 //!     // Check the result (Ok(30))
-//!     assert_eq!(engine.registers.get(Register::A0 as usize).unwrap(), 0);
-//!     assert_eq!(engine.registers.get(Register::A1 as usize).unwrap(), 30);
+//!     assert_eq!(
+//!         engine.registers.cpu.get(CPURegister::A0 as usize).unwrap(),
+//!         0
+//!     );
+//!     assert_eq!(
+//!         engine.registers.cpu.get(CPURegister::A1 as usize).unwrap(),
+//!         30
+//!     );
 //! }
 //! ```
 //!
@@ -92,15 +98,12 @@
 //! - `a_extension`:
 //!     - Enable the RV32A extension (atomic instructions).
 //!         - Disabled by default, no additional dependencies.
-//! - `instruction_limit`:
-//!     - Limit the number of instructions executed by the engine, yielding when the limit is reached.
-//!         - Disabled by default, no additional dependencies.
 #![cfg_attr(not(test), no_std)]
 pub mod engine;
 pub mod error;
 mod instruction;
 pub mod memory;
-pub mod register;
+pub mod registers;
 
 #[cfg(test)]
 mod tests {

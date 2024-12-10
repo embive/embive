@@ -28,8 +28,8 @@ impl<M: Memory> Instruction<M> for Amo {
     fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let inst = TypeR::from(data);
 
-        let rs1 = engine.registers.get(inst.rs1)? as u32;
-        let rs2 = engine.registers.get(inst.rs2)?;
+        let rs1 = engine.registers.cpu.get(inst.rs1)? as u32;
+        let rs2 = engine.registers.cpu.get(inst.rs2)?;
         let result;
 
         // Check if width is supported
@@ -121,7 +121,7 @@ impl<M: Memory> Instruction<M> for Amo {
 
         // Store the result in the destination register
         if inst.rd != 0 {
-            let rd = engine.registers.get_mut(inst.rd)?;
+            let rd = engine.registers.cpu.get_mut(inst.rd)?;
             *rd = result;
         }
 
@@ -152,13 +152,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOADD_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 2;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 2;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 16);
     }
 
@@ -176,13 +176,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOSWAP_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 2;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 2;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 2);
     }
 
@@ -200,13 +200,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((LR_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 2;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 2;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(engine.memory_reservation, Some((RAM_OFFSET as u32, 14)));
     }
 
@@ -224,15 +224,15 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((SC_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 2;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 2;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         engine.memory_reservation = Some((RAM_OFFSET as u32, 14));
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(i32::from_le_bytes(ram), 2);
     }
 
@@ -250,13 +250,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOXOR_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 2;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 2;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 12);
     }
 
@@ -274,13 +274,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOOR_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 3;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 3;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 15);
     }
 
@@ -298,13 +298,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOAND_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 3;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 3;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 2);
     }
 
@@ -322,13 +322,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOMIN_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 3;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 3;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), -14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -14);
         assert_eq!(i32::from_le_bytes(ram), -14);
     }
 
@@ -346,13 +346,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOMAX_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 3;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 3;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), -14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -14);
         assert_eq!(i32::from_le_bytes(ram), 3);
     }
 
@@ -370,13 +370,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOMINU_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 3;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 3;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), -14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -14);
         assert_eq!(i32::from_le_bytes(ram), 3);
     }
 
@@ -394,13 +394,13 @@ mod tests {
             funct10: WORD_WIDTH as u16 | ((AMOMAXU_FUNCT5 as u16) << 5),
         };
 
-        *engine.registers.get_mut(2).unwrap() = 3;
-        *engine.registers.get_mut(3).unwrap() = RAM_OFFSET as i32;
+        *engine.registers.cpu.get_mut(2).unwrap() = 3;
+        *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
         assert_eq!(result, Ok(true));
 
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), -14);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -14);
         assert_eq!(i32::from_le_bytes(ram), -14);
     }
 }

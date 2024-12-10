@@ -17,7 +17,7 @@ impl<M: Memory> Instruction<M> for Jal {
 
         // Load pc + instruction size into the destination register.
         if inst.rd != 0 {
-            let reg = engine.registers.get_mut(inst.rd)?;
+            let reg = engine.registers.cpu.get_mut(inst.rd)?;
             *reg = engine.program_counter.wrapping_add(INSTRUCTION_SIZE) as i32;
         }
 
@@ -44,7 +44,7 @@ mod tests {
 
         let result = Jal::decode_execute(jal.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(engine.program_counter, 0x1 + 0x1000);
     }
 }

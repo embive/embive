@@ -18,4 +18,3 @@ readme = "README.md"
 default = []
 m_extension = []
 a_extension = []
-instruction_limit = []

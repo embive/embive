@@ -26,7 +26,7 @@ The following templates are available for programs that run inside Embive:
 use embive::{
     engine::{Config, Engine, SYSCALL_ARGS},
     memory::{Memory, SliceMemory},
-    register::Register,
+    registers::CPURegister,
 };
 
 // A simple syscall implementation. Check [`embive::engine::SyscallFn`].
@@ -74,8 +74,14 @@ fn main() {
     engine.run().unwrap();
 
     // Check the result (Ok(30))
-    assert_eq!(engine.registers.get(Register::A0 as usize).unwrap(), 0);
-    assert_eq!(engine.registers.get(Register::A1 as usize).unwrap(), 30);
+    assert_eq!(
+        engine.registers.cpu.get(CPURegister::A0 as usize).unwrap(),
+        0
+    );
+    assert_eq!(
+        engine.registers.cpu.get(CPURegister::A1 as usize).unwrap(),
+        30
+    );
 }
 ```
 

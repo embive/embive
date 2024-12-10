@@ -18,8 +18,8 @@ impl<M: Memory> Instruction<M> for Store {
     fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let inst = TypeS::from(data);
 
-        let rs1 = engine.registers.get(inst.rs1)?;
-        let rs2 = engine.registers.get(inst.rs2)?;
+        let rs1 = engine.registers.cpu.get(inst.rs1)?;
+        let rs2 = engine.registers.cpu.get(inst.rs2)?;
 
         let address = (rs1 as u32).wrapping_add_signed(inst.imm);
         match inst.funct3 {
@@ -57,8 +57,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = get_ram_addr();
-        *engine.registers.get_mut(2).unwrap() = 0x2;
+        *engine.registers.cpu.get_mut(1).unwrap() = get_ram_addr();
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Store::decode_execute(store.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -78,8 +78,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = get_ram_addr();
-        *engine.registers.get_mut(2).unwrap() = 0x1234;
+        *engine.registers.cpu.get_mut(1).unwrap() = get_ram_addr();
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = Store::decode_execute(store.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -99,8 +99,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = get_ram_addr();
-        *engine.registers.get_mut(2).unwrap() = 0x12345678;
+        *engine.registers.cpu.get_mut(1).unwrap() = get_ram_addr();
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x12345678;
 
         let result = Store::decode_execute(store.into(), &mut engine);
         assert_eq!(result, Ok(true));

@@ -21,8 +21,8 @@ impl<M: Memory> Instruction<M> for Branch {
     fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let inst = TypeB::from(data);
 
-        let rs1 = engine.registers.get(inst.rs1)?;
-        let rs2 = engine.registers.get(inst.rs2)?;
+        let rs1 = engine.registers.cpu.get(inst.rs1)?;
+        let rs2 = engine.registers.cpu.get(inst.rs2)?;
 
         let branch = match inst.funct3 {
             BEQ_FUNCT3 => rs1 == rs2,
@@ -64,8 +64,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = -0x1;
-        *engine.registers.get_mut(2).unwrap() = -0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = -0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -84,8 +84,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -104,8 +104,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = 0x2;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -124,8 +124,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -144,8 +144,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = -0x2;
-        *engine.registers.get_mut(2).unwrap() = -0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = -0x2;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -164,8 +164,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = 0x2;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -184,8 +184,8 @@ mod tests {
             rs2: 1,
         };
 
-        *engine.registers.get_mut(1).unwrap() = -0x2;
-        *engine.registers.get_mut(2).unwrap() = -0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = -0x2;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -204,8 +204,8 @@ mod tests {
             rs2: 1,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = 0x2;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -224,8 +224,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -243,8 +243,8 @@ mod tests {
             rs1: 1,
             rs2: 2,
         };
-        *engine.registers.get_mut(1).unwrap() = -0x2;
-        *engine.registers.get_mut(2).unwrap() = -0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = -0x2;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -263,8 +263,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = 0x2;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -283,8 +283,8 @@ mod tests {
             rs2: 1,
         };
 
-        *engine.registers.get_mut(1).unwrap() = -0x2;
-        *engine.registers.get_mut(2).unwrap() = -0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = -0x2;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -303,8 +303,8 @@ mod tests {
             rs2: 1,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = -0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -323,8 +323,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));
@@ -343,8 +343,8 @@ mod tests {
             rs2: 2,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x1;
-        *engine.registers.get_mut(2).unwrap() = -0x1;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x1;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
         assert_eq!(result, Ok(true));

@@ -1,14 +1,13 @@
-//! Register Module
-
+//! CPU Register Module
 use crate::error::EmbiveError;
 
 /// Number of registers available
-pub const REGISTER_COUNT: usize = 32;
+pub const CPU_REGISTER_COUNT: usize = 32;
 
 /// CPU Register Enum
 #[repr(usize)]
 #[derive(Debug)]
-pub enum Register {
+pub enum CPURegister {
     /// x0 register, hardwired to 0 (read-only).
     Zero = 0,
     /// x1 register, return address.
@@ -76,61 +75,41 @@ pub enum Register {
 }
 
 /// CPU Registers
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub struct Registers {
-    pub(crate) inner: [i32; REGISTER_COUNT],
+#[derive(Debug, Default, PartialEq, Copy, Clone)]
+pub struct CPURegisters {
+    pub(crate) inner: [i32; CPU_REGISTER_COUNT],
 }
 
-impl Default for Registers {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Registers {
-    /// Create a new set of general purpose registers.
-    /// All registers are set to 0.
-    pub(crate) fn new() -> Self {
-        Self {
-            inner: [0; REGISTER_COUNT],
-        }
-    }
-
-    /// Reset the general purpose registers to their initial state.
-    /// All registers are set to 0.
-    pub fn reset(&mut self) {
-        self.inner = [0; REGISTER_COUNT];
-    }
-
-    /// Get a general purpose register.
+impl CPURegisters {
+    /// Get a CPU register.
     ///
     /// Arguments:
-    /// - `index`: The index of the register (from [`Register::Zero`] to [`Register::T6`]).
+    /// - `index`: The index of the register (from [`CPUCPURegister::Zero`] to [`CPUCPURegister::T6`]).
     ///
     /// Returns:
     /// - `Ok(i32)`: The value of the register.
     /// - `Err(EmbiveError)`: The register index is out of bounds.
     #[inline]
     pub fn get(&self, index: usize) -> Result<i32, EmbiveError> {
-        if index >= REGISTER_COUNT {
+        if index >= CPU_REGISTER_COUNT {
             return Err(EmbiveError::InvalidRegister);
         }
 
         Ok(self.inner[index])
     }
 
-    /// Get a mutable reference to a general purpose register.
+    /// Get a mutable reference to a CPU register.
     ///
     /// Arguments:
-    /// - `index`: The index of the register (from [`Register::Zero`] to [`Register::T6`]).
-    ///     - Register `0` [`Register::Zero`] should be read-only, we ignore it for performance reasons.
+    /// - `index`: The index of the register (from [`CPUCPURegister::Zero`] to [`CPUCPURegister::T6`]).
+    ///     - Register `0` [`CPUCPURegister::Zero`] should be read-only, we ignore it for performance reasons.
     ///
     /// Returns:
     /// - `Ok(&mut i32)`: Mutable reference to the register.
     /// - `Err(EmbiveError)`: The register index is out of bounds.
     #[inline]
     pub fn get_mut(&mut self, index: usize) -> Result<&mut i32, EmbiveError> {
-        if index >= REGISTER_COUNT {
+        if index >= CPU_REGISTER_COUNT {
             return Err(EmbiveError::InvalidRegister);
         }
 
@@ -143,41 +122,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_register() {
-        let mut registers = Registers::new();
+    fn get_cpu_register() {
+        let mut registers = CPURegisters::default();
 
         assert_eq!(registers.get(0), Ok(0));
-        assert_eq!(registers.get(REGISTER_COUNT as usize - 1), Ok(0));
+        assert_eq!(registers.get(CPU_REGISTER_COUNT as usize - 1), Ok(0));
         assert_eq!(registers.get_mut(0).map(|x| *x), Ok(0));
         assert_eq!(
-            registers.get_mut(REGISTER_COUNT as usize - 1).map(|x| *x),
+            registers
+                .get_mut(CPU_REGISTER_COUNT as usize - 1)
+                .map(|x| *x),
             Ok(0)
         );
     }
 
     #[test]
-    fn get_register_out_of_bounds() {
-        let mut registers = Registers::new();
+    fn get_cpu_register_out_of_bounds() {
+        let mut registers = CPURegisters::default();
 
         assert_eq!(
-            registers.get(REGISTER_COUNT as usize),
+            registers.get(CPU_REGISTER_COUNT as usize),
             Err(EmbiveError::InvalidRegister)
         );
         assert_eq!(
-            registers.get_mut(REGISTER_COUNT as usize).map(|x| *x),
+            registers.get_mut(CPU_REGISTER_COUNT as usize).map(|x| *x),
             Err(EmbiveError::InvalidRegister)
         );
-    }
-
-    #[test]
-    fn reset_registers() {
-        let mut registers = Registers::new();
-        for i in 0..REGISTER_COUNT {
-            registers.inner[i] = i as i32;
-        }
-
-        registers.reset();
-
-        assert_eq!(registers.inner, [0; REGISTER_COUNT]);
     }
 }

@@ -44,7 +44,7 @@ mod tests {
     use super::*;
     use crate::engine::{Config, SyscallFn};
     use crate::memory::{Memory, SliceMemory, RAM_OFFSET};
-    use crate::register::Register;
+    use crate::registers::CPURegister;
 
     fn get_ram_addr() -> u32 {
         RAM_OFFSET
@@ -104,14 +104,46 @@ mod tests {
             },
         )
         .unwrap();
-        *engine.registers.get_mut(Register::A0 as usize).unwrap() = 0;
-        *engine.registers.get_mut(Register::A1 as usize).unwrap() = 1;
-        *engine.registers.get_mut(Register::A2 as usize).unwrap() = 2;
-        *engine.registers.get_mut(Register::A3 as usize).unwrap() = 3;
-        *engine.registers.get_mut(Register::A4 as usize).unwrap() = 4;
-        *engine.registers.get_mut(Register::A5 as usize).unwrap() = 5;
-        *engine.registers.get_mut(Register::A6 as usize).unwrap() = 6;
-        *engine.registers.get_mut(Register::A7 as usize).unwrap() = -1;
+        *engine
+            .registers
+            .cpu
+            .get_mut(CPURegister::A0 as usize)
+            .unwrap() = 0;
+        *engine
+            .registers
+            .cpu
+            .get_mut(CPURegister::A1 as usize)
+            .unwrap() = 1;
+        *engine
+            .registers
+            .cpu
+            .get_mut(CPURegister::A2 as usize)
+            .unwrap() = 2;
+        *engine
+            .registers
+            .cpu
+            .get_mut(CPURegister::A3 as usize)
+            .unwrap() = 3;
+        *engine
+            .registers
+            .cpu
+            .get_mut(CPURegister::A4 as usize)
+            .unwrap() = 4;
+        *engine
+            .registers
+            .cpu
+            .get_mut(CPURegister::A5 as usize)
+            .unwrap() = 5;
+        *engine
+            .registers
+            .cpu
+            .get_mut(CPURegister::A6 as usize)
+            .unwrap() = 6;
+        *engine
+            .registers
+            .cpu
+            .get_mut(CPURegister::A7 as usize)
+            .unwrap() = -1;
 
         let misc_mem = TypeI {
             rd: 0,
@@ -122,8 +154,8 @@ mod tests {
 
         let result = System::decode_execute(misc_mem.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(engine.registers.get(Register::A0 as usize), Ok(0));
-        assert_eq!(engine.registers.get(Register::A1 as usize), Ok(21));
+        assert_eq!(engine.registers.cpu.get(CPURegister::A0 as usize), Ok(0));
+        assert_eq!(engine.registers.cpu.get(CPURegister::A1 as usize), Ok(21));
         assert_eq!(
             engine
                 .memory

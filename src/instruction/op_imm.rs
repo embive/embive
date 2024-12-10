@@ -23,12 +23,12 @@ impl<M: Memory> Instruction<M> for OpImm {
     fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
         let inst = TypeI::from(data);
 
-        let rs1 = engine.registers.get(inst.rs1)?;
+        let rs1 = engine.registers.cpu.get(inst.rs1)?;
         let imm = inst.imm;
 
         if inst.rd != 0 {
             // rd = 0 means its a HINT instruction, just ignore it.
-            let rd = engine.registers.get_mut(inst.rd)?;
+            let rd = engine.registers.cpu.get_mut(inst.rd)?;
             *rd = match inst.funct3 {
                 ADDI_FUNC3 => rs1.wrapping_add(imm),
                 SLLI_FUNC3 => rs1 << (imm & 0b11111),
@@ -74,11 +74,11 @@ mod tests {
             imm: 0x100,
             funct3: ADDI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 1;
 
         let result = OpImm::decode_execute(addi.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x101);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x101);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -92,11 +92,11 @@ mod tests {
             imm: -100,
             funct3: ADDI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 1;
+        *engine.registers.cpu.get_mut(2).unwrap() = 1;
 
         let result = OpImm::decode_execute(addi.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), -99);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -99);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -110,11 +110,11 @@ mod tests {
             imm: 0x100,
             funct3: XORI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x123;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x123;
 
         let result = OpImm::decode_execute(xori.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x023);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x023);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -128,11 +128,11 @@ mod tests {
             imm: -1,
             funct3: XORI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = OpImm::decode_execute(xori.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), !0x1234);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), !0x1234);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -146,11 +146,11 @@ mod tests {
             imm: 0x100,
             funct3: ORI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = OpImm::decode_execute(ori.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 | 0x100);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x1234 | 0x100);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -164,11 +164,11 @@ mod tests {
             imm: -0x100,
             funct3: ORI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = OpImm::decode_execute(ori.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 | -0x100);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x1234 | -0x100);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -182,11 +182,11 @@ mod tests {
             imm: 0x100,
             funct3: ANDI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = OpImm::decode_execute(andi.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 & 0x100);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x1234 & 0x100);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -200,11 +200,11 @@ mod tests {
             imm: 0b101,
             funct3: SLLI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = OpImm::decode_execute(slli.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1234 << 0b101);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x1234 << 0b101);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -218,12 +218,12 @@ mod tests {
             imm: 0b101,
             funct3: SRLI_SRAI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = -0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1234;
 
         let result = OpImm::decode_execute(srli.into(), &mut engine);
         assert_eq!(result, Ok(true));
         assert_eq!(
-            *engine.registers.get_mut(1).unwrap(),
+            *engine.registers.cpu.get_mut(1).unwrap(),
             ((-0x1234i32 as u32) >> 0b101) as i32
         );
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
@@ -239,11 +239,11 @@ mod tests {
             imm: 0b101 | (0b1 << 10),
             funct3: SRLI_SRAI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = -0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1234;
 
         let result = OpImm::decode_execute(srai.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), -0x1234 >> 0b101);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -0x1234 >> 0b101);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -257,11 +257,11 @@ mod tests {
             imm: 0x123,
             funct3: SLTI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x100;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x100;
 
         let result = OpImm::decode_execute(slti.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -275,11 +275,11 @@ mod tests {
             imm: 0x1000,
             funct3: SLTI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = OpImm::decode_execute(slti.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -293,11 +293,11 @@ mod tests {
             imm: 0x1000,
             funct3: SLTI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1000;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1000;
 
         let result = OpImm::decode_execute(slti.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -311,11 +311,11 @@ mod tests {
             imm: -0x1000,
             funct3: SLTI_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = -0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1234;
 
         let result = OpImm::decode_execute(slti.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -329,11 +329,11 @@ mod tests {
             imm: 0x123,
             funct3: SLTIU_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x100;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x100;
 
         let result = OpImm::decode_execute(sltiu.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -347,11 +347,11 @@ mod tests {
             imm: 0x1000,
             funct3: SLTIU_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = OpImm::decode_execute(sltiu.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -365,11 +365,11 @@ mod tests {
             imm: 0x1000,
             funct3: SLTIU_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = 0x1000;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x1000;
 
         let result = OpImm::decode_execute(sltiu.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -383,11 +383,11 @@ mod tests {
             imm: -0x100,
             funct3: SLTIU_FUNC3,
         };
-        *engine.registers.get_mut(2).unwrap() = -0x1234;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x1234;
 
         let result = OpImm::decode_execute(sltiu.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 1);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 }

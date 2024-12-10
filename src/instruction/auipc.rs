@@ -18,7 +18,7 @@ impl<M: Memory> Instruction<M> for Auipc {
         if inst.rd != 0 {
             // rd = 0 means its a HINT instruction, just ignore it.
             // Load the immediate value + pc into the register.
-            let reg = engine.registers.get_mut(inst.rd)?;
+            let reg = engine.registers.cpu.get_mut(inst.rd)?;
             *reg = engine.program_counter.wrapping_add_signed(inst.imm) as i32;
         }
 
@@ -45,7 +45,7 @@ mod tests {
 
         let result = Auipc::decode_execute(auipc.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x1001);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x1001);
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
@@ -61,7 +61,7 @@ mod tests {
 
         let result = Auipc::decode_execute(auipc.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), -0xfff);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -0xfff);
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 }

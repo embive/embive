@@ -16,11 +16,11 @@ impl<M: Memory> Instruction<M> for Jalr {
         let inst = TypeI::from(data);
 
         // Get the value of the source register.
-        let rs1 = engine.registers.get(inst.rs1)?;
+        let rs1 = engine.registers.cpu.get(inst.rs1)?;
 
         // Load pc + instruction size into the destination register (if not unconditional).
         if inst.rd != 0 {
-            let rd = engine.registers.get_mut(inst.rd)?;
+            let rd = engine.registers.cpu.get_mut(inst.rd)?;
             *rd = engine.program_counter.wrapping_add(INSTRUCTION_SIZE) as i32;
         }
 
@@ -50,11 +50,11 @@ mod tests {
             imm: -0x100,
         };
 
-        *engine.registers.get_mut(2).unwrap() = -0x200;
+        *engine.registers.cpu.get_mut(2).unwrap() = -0x200;
 
         let result = Jalr::decode_execute(jalr.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(engine.program_counter, (-0x200i32 + -0x100i32) as u32);
     }
 
@@ -70,11 +70,11 @@ mod tests {
             imm: 0x100,
         };
 
-        *engine.registers.get_mut(2).unwrap() = 0x200;
+        *engine.registers.cpu.get_mut(2).unwrap() = 0x200;
 
         let result = Jalr::decode_execute(jalr.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(engine.program_counter, 0x300);
     }
 
@@ -90,11 +90,11 @@ mod tests {
             imm: 0x100,
         };
 
-        *engine.registers.get_mut(1).unwrap() = 0x200;
+        *engine.registers.cpu.get_mut(1).unwrap() = 0x200;
 
         let result = Jalr::decode_execute(jalr.into(), &mut engine);
         assert_eq!(result, Ok(true));
-        assert_eq!(*engine.registers.get_mut(1).unwrap(), 0x5);
+        assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(engine.program_counter, 0x300);
     }
 }
