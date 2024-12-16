@@ -1,5 +1,5 @@
 use crate::engine::Engine;
-use crate::error::EmbiveError;
+use crate::error::Error;
 use crate::instruction::format::TypeU;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
@@ -12,7 +12,7 @@ pub struct Auipc {}
 
 impl<M: Memory> Instruction<M> for Auipc {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
         let inst = TypeU::from(data);
 
         if inst.rd != 0 {

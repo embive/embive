@@ -1,5 +1,5 @@
 use crate::engine::Engine;
-use crate::error::EmbiveError;
+use crate::error::Error;
 use crate::instruction::format::TypeR;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
@@ -25,7 +25,7 @@ pub struct Amo {}
 
 impl<M: Memory> Instruction<M> for Amo {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
         let inst = TypeR::from(data);
 
         let rs1 = engine.registers.cpu.get(inst.rs1)? as u32;
@@ -113,10 +113,10 @@ impl<M: Memory> Instruction<M> for Amo {
                             .memory
                             .store(rs1, (result as u32).max(rs2 as u32).to_le_bytes())?;
                     }
-                    _ => return Err(EmbiveError::InvalidInstruction),
+                    _ => return Err(Error::InvalidInstruction),
                 }
             }
-            _ => return Err(EmbiveError::InvalidInstruction),
+            _ => return Err(Error::InvalidInstruction),
         }
 
         // Store the result in the destination register

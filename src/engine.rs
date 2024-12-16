@@ -1,6 +1,6 @@
 //! Engine Module
 
-use crate::error::EmbiveError;
+use crate::error::Error;
 use crate::instruction::decode_execute;
 use crate::memory::Memory;
 use crate::registers::{CPURegister, Registers};
@@ -86,10 +86,9 @@ impl<'a, M: Memory> Engine<'a, M> {
     /// Create a new engine.
     ///
     /// Arguments:
-    /// - `code`: Code buffer, `u8` slice.
-    /// - `ram`: RAM buffer, mutable `u8` slice.
+    /// - `memory`: System memory (code + RAM).
     /// - `config`: Engine configuration.
-    pub fn new(memory: &'a mut M, config: Config<M>) -> Result<Self, EmbiveError> {
+    pub fn new(memory: &'a mut M, config: Config<M>) -> Result<Self, Error> {
         // Create the engine
         Ok(Engine {
             program_counter: 0,
@@ -121,8 +120,8 @@ impl<'a, M: Memory> Engine<'a, M> {
     /// - `Ok(bool)`: Success, returns if should continue:
     ///     - `True`: Continue running (yielded, call `run` again).
     ///     - `False`: Stop running (halted, call `reset` prior to running again).
-    /// - `Err(EmbiveError)`: Failed to run.
-    pub fn run(&mut self) -> Result<bool, EmbiveError> {
+    /// - `Err(Error)`: Failed to run.
+    pub fn run(&mut self) -> Result<bool, Error> {
         // Check if there is an instruction limit
         if self.config.instruction_limit > 0 {
             // Run the engine with an instruction limit
@@ -154,9 +153,9 @@ impl<'a, M: Memory> Engine<'a, M> {
     /// - `Ok(bool)`: Success, returns if should continue:
     ///     - `True`: Should continue.
     ///     - `False`: Should stop (halted).
-    /// - `Err(EmbiveError)`: Failed to execute.
+    /// - `Err(Error)`: Failed to execute.
     #[inline]
-    pub fn step(&mut self) -> Result<bool, EmbiveError> {
+    pub fn step(&mut self) -> Result<bool, Error> {
         // Fetch next instruction
         let data = self.fetch()?;
 
@@ -170,9 +169,9 @@ impl<'a, M: Memory> Engine<'a, M> {
     ///
     /// Returns:
     /// - `Ok(u32)`: The instruction (raw) that was fetched.
-    /// - `Err(EmbiveError)`: The program counter is out of bounds.
+    /// - `Err(Error)`: The program counter is out of bounds.
     #[inline]
-    pub fn fetch(&mut self) -> Result<u32, EmbiveError> {
+    pub fn fetch(&mut self) -> Result<u32, Error> {
         let data = self.memory.load::<4>(self.program_counter)?;
         Ok(u32::from_le_bytes(data))
     }
@@ -182,10 +181,10 @@ impl<'a, M: Memory> Engine<'a, M> {
     ///
     /// Returns:
     /// - `Ok(())`: Syscall executed.
-    /// - `Err(EmbiveError)`: Failed to execute the system call function.
+    /// - `Err(Error)`: Failed to execute the system call function.
     ///     - System call function is not set.
     #[inline(always)]
-    pub(crate) fn syscall(&mut self) -> Result<(), EmbiveError> {
+    pub(crate) fn syscall(&mut self) -> Result<(), Error> {
         if let Some(syscall_fn) = self.config.syscall_fn {
             // Syscall Number
             let nr = self.registers.cpu.inner[CPURegister::A7 as usize];
@@ -218,7 +217,7 @@ impl<'a, M: Memory> Engine<'a, M> {
         }
 
         // No syscall function set
-        Err(EmbiveError::NoSyscallFunction)
+        Err(Error::NoSyscallFunction)
     }
 }
 

@@ -1,28 +1,30 @@
 //! Error Module
 
-use core::{error::Error, fmt::Display};
+use core::fmt::{Display, Formatter, Result};
 
-/// Embive Error Enum
+/// Embive Error
 #[derive(Debug, PartialEq)]
-pub enum EmbiveError {
+pub enum Error {
     /// Memory address is out of bounds.
     InvalidMemoryAddress,
     /// Program counter is out of bounds.
     InvalidProgramCounter,
     /// Instruction is not implemented.
     InvalidInstruction,
-    /// Register is out of bounds.
-    InvalidRegister,
+    /// CPU Register is out of bounds.
+    InvalidCPURegister,
+    /// Control and Status Register is invalid or not supported.
+    InvalidCSRegister,
     /// No syscall function is set.
     NoSyscallFunction,
     /// Custom error.
     Custom(&'static str),
 }
 
-impl Error for EmbiveError {}
+impl core::error::Error for Error {}
 
-impl Display for EmbiveError {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{:?}", self)
     }
 }

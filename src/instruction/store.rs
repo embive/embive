@@ -1,5 +1,5 @@
 use crate::engine::Engine;
-use crate::error::EmbiveError;
+use crate::error::Error;
 use crate::instruction::format::TypeS;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
@@ -15,7 +15,7 @@ pub struct Store {}
 
 impl<M: Memory> Instruction<M> for Store {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
         let inst = TypeS::from(data);
 
         let rs1 = engine.registers.cpu.get(inst.rs1)?;
@@ -26,7 +26,7 @@ impl<M: Memory> Instruction<M> for Store {
             SB_FUNCT3 => engine.memory.store(address, (rs2 as u8).to_le_bytes())?,
             SH_FUNCT3 => engine.memory.store(address, (rs2 as u16).to_le_bytes())?,
             SW_FUNCT3 => engine.memory.store(address, rs2.to_le_bytes())?,
-            _ => return Err(EmbiveError::InvalidInstruction),
+            _ => return Err(Error::InvalidInstruction),
         }
 
         // Go to next instruction

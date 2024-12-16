@@ -1,5 +1,5 @@
 //! CPU Register Module
-use crate::error::EmbiveError;
+use crate::error::Error;
 
 /// Number of registers available
 pub const CPU_REGISTER_COUNT: usize = 32;
@@ -84,15 +84,15 @@ impl CPURegisters {
     /// Get a CPU register.
     ///
     /// Arguments:
-    /// - `index`: The index of the register (from [`CPUCPURegister::Zero`] to [`CPUCPURegister::T6`]).
+    /// - `index`: The index of the register (from [`CPURegister::Zero`] to [`CPURegister::T6`]).
     ///
     /// Returns:
     /// - `Ok(i32)`: The value of the register.
-    /// - `Err(EmbiveError)`: The register index is out of bounds.
+    /// - `Err(Error)`: The register index is out of bounds.
     #[inline]
-    pub fn get(&self, index: usize) -> Result<i32, EmbiveError> {
+    pub fn get(&self, index: usize) -> Result<i32, Error> {
         if index >= CPU_REGISTER_COUNT {
-            return Err(EmbiveError::InvalidRegister);
+            return Err(Error::InvalidCPURegister);
         }
 
         Ok(self.inner[index])
@@ -101,16 +101,16 @@ impl CPURegisters {
     /// Get a mutable reference to a CPU register.
     ///
     /// Arguments:
-    /// - `index`: The index of the register (from [`CPUCPURegister::Zero`] to [`CPUCPURegister::T6`]).
-    ///     - Register `0` [`CPUCPURegister::Zero`] should be read-only, we ignore it for performance reasons.
+    /// - `index`: The index of the register (from [`CPURegister::Zero`] to [`CPURegister::T6`]).
+    ///     - Register `0` [`CPURegister::Zero`] should be read-only, we ignore it for performance reasons.
     ///
     /// Returns:
     /// - `Ok(&mut i32)`: Mutable reference to the register.
-    /// - `Err(EmbiveError)`: The register index is out of bounds.
+    /// - `Err(Error)`: The register index is out of bounds.
     #[inline]
-    pub fn get_mut(&mut self, index: usize) -> Result<&mut i32, EmbiveError> {
+    pub fn get_mut(&mut self, index: usize) -> Result<&mut i32, Error> {
         if index >= CPU_REGISTER_COUNT {
-            return Err(EmbiveError::InvalidRegister);
+            return Err(Error::InvalidCPURegister);
         }
 
         Ok(&mut self.inner[index])
@@ -142,11 +142,11 @@ mod tests {
 
         assert_eq!(
             registers.get(CPU_REGISTER_COUNT as usize),
-            Err(EmbiveError::InvalidRegister)
+            Err(Error::InvalidCPURegister)
         );
         assert_eq!(
             registers.get_mut(CPU_REGISTER_COUNT as usize).map(|x| *x),
-            Err(EmbiveError::InvalidRegister)
+            Err(Error::InvalidCPURegister)
         );
     }
 }

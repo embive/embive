@@ -1,6 +1,6 @@
 //! Memory Module
 
-use crate::error::EmbiveError;
+use crate::error::Error;
 use core::fmt::Debug;
 
 /// RAM address offset
@@ -20,8 +20,8 @@ pub trait Memory {
     ///
     /// Returns:
     /// - `Ok([u8; N])`: Bytes at the memory address.
-    /// - `Err(EmbiveError)`: An error occurred. Ex.: Memory address is out of bounds.
-    fn load<const N: usize>(&self, address: u32) -> Result<[u8; N], EmbiveError>;
+    /// - `Err(Error)`: An error occurred. Ex.: Memory address is out of bounds.
+    fn load<const N: usize>(&self, address: u32) -> Result<[u8; N], Error>;
 
     /// Store `N` bytes to memory address.
     /// Memory address can only be from RAM ([`RAM_OFFSET`]) region.
@@ -33,8 +33,8 @@ pub trait Memory {
     ///
     /// Returns:
     /// - `Ok(())`: Bytes were stored successfully.
-    /// - `Err(EmbiveError)`: An error occurred. Ex.: Memory address is out of bounds.
-    fn store<const N: usize>(&mut self, address: u32, data: [u8; N]) -> Result<(), EmbiveError>;
+    /// - `Err(Error)`: An error occurred. Ex.: Memory address is out of bounds.
+    fn store<const N: usize>(&mut self, address: u32, data: [u8; N]) -> Result<(), Error>;
 }
 
 /// A simple memory implementation using slices.
@@ -59,21 +59,21 @@ impl SliceMemory<'_> {
 }
 
 impl Memory for SliceMemory<'_> {
-    fn load<const N: usize>(&self, address: u32) -> Result<[u8; N], EmbiveError> {
+    fn load<const N: usize>(&self, address: u32) -> Result<[u8; N], Error> {
         // Check if the address is in RAM or code.
         if address >= RAM_OFFSET {
             // Subtract the RAM offset to get the actual address.
             let address = address - RAM_OFFSET;
 
             if (address as usize + N) > self.ram.len() {
-                return Err(EmbiveError::InvalidMemoryAddress);
+                return Err(Error::InvalidMemoryAddress);
             }
 
             // Unwrap is safe because the slice is guaranteed to at least have N elements.
             Ok(*self.ram[address as usize..].first_chunk::<N>().unwrap())
         } else {
             if (address as usize + N) > self.code.len() {
-                return Err(EmbiveError::InvalidMemoryAddress);
+                return Err(Error::InvalidMemoryAddress);
             }
 
             // Unwrap is safe because the slice is guaranteed to at least have N elements.
@@ -81,11 +81,11 @@ impl Memory for SliceMemory<'_> {
         }
     }
 
-    fn store<const N: usize>(&mut self, address: u32, data: [u8; N]) -> Result<(), EmbiveError> {
+    fn store<const N: usize>(&mut self, address: u32, data: [u8; N]) -> Result<(), Error> {
         let address = address.wrapping_sub(RAM_OFFSET);
 
         if (address as usize + N) > self.ram.len() {
-            return Err(EmbiveError::InvalidMemoryAddress);
+            return Err(Error::InvalidMemoryAddress);
         }
 
         // Unwrap is safe because the slice is guaranteed to have at least N elements.
@@ -116,7 +116,7 @@ mod tests {
         let result = memory.load::<4>(0x80000000);
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), EmbiveError::InvalidMemoryAddress);
+        assert_eq!(result.unwrap_err(), Error::InvalidMemoryAddress);
     }
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
         let result = memory.store::<4>(0x80000000, [0; 4]);
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), EmbiveError::InvalidMemoryAddress);
+        assert_eq!(result.unwrap_err(), Error::InvalidMemoryAddress);
     }
 
     #[test]
@@ -156,6 +156,6 @@ mod tests {
         let result = memory.load::<4>(0x0);
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), EmbiveError::InvalidMemoryAddress);
+        assert_eq!(result.unwrap_err(), Error::InvalidMemoryAddress);
     }
 }

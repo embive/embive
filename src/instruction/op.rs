@@ -1,5 +1,5 @@
 use crate::engine::Engine;
-use crate::error::EmbiveError;
+use crate::error::Error;
 use crate::instruction::format::TypeR;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
 use crate::memory::Memory;
@@ -53,7 +53,7 @@ pub struct Op {}
 
 impl<M: Memory> Instruction<M> for Op {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
         let inst = TypeR::from(data);
 
         let rs1 = engine.registers.cpu.get(inst.rs1)?;
@@ -115,7 +115,7 @@ impl<M: Memory> Instruction<M> for Op {
                 } // Remu (Remainder, unsigned)
                 SUB_FUNCT10 => rs1.wrapping_sub(rs2), // Sub
                 SRA_FUNCT10 => rs1.wrapping_shr(rs2 as u32), // Sra (Arithmetic shift right, fill with sign bit)
-                _ => return Err(EmbiveError::InvalidInstruction),
+                _ => return Err(Error::InvalidInstruction),
             };
         }
 

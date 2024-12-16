@@ -15,7 +15,7 @@ mod store;
 mod system;
 
 use crate::engine::Engine;
-use crate::error::EmbiveError;
+use crate::error::Error;
 use crate::memory::Memory;
 
 #[cfg(feature = "a_extension")]
@@ -62,8 +62,8 @@ trait Instruction<M: Memory> {
     /// - `Ok(bool)`: Instruction executed successfully:
     ///     - `True`: Should continue execution.
     ///     - `False`: Should halt.
-    /// - `Err(EmbiveError)`: Failed to execute instruction.
-    fn decode_execute(data: u32, engine: &mut Engine<M>) -> Result<bool, EmbiveError>;
+    /// - `Err(Error)`: Failed to execute instruction.
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error>;
 }
 
 /// Decode and execute an instruction.
@@ -76,12 +76,12 @@ trait Instruction<M: Memory> {
 /// - `Ok(bool)`: The instruction was decoded and executed successfully:
 ///     - `True`: Should continue execution.
 ///     - `False`: Should halt.
-/// - `Err(EmbiveError)`: Failed to decode or execute instruction.
+/// - `Err(Error)`: Failed to decode or execute instruction.
 #[inline]
 pub(crate) fn decode_execute<M: Memory>(
-    engine: &mut Engine<M>,
+    engine: &mut Engine<'_, M>,
     data: u32,
-) -> Result<bool, EmbiveError> {
+) -> Result<bool, Error> {
     match (data & 0x7F) as u8 {
         LOAD_OPCODE => Load::decode_execute(data, engine),
         MISC_MEM_OPCODE => MiscMem::decode_execute(data, engine),
@@ -96,7 +96,7 @@ pub(crate) fn decode_execute<M: Memory>(
         JALR_OPCODE => Jalr::decode_execute(data, engine),
         JAL_OPCODE => Jal::decode_execute(data, engine),
         SYSTEM_OPCODE => System::decode_execute(data, engine),
-        _ => Err(EmbiveError::InvalidInstruction),
+        _ => Err(Error::InvalidInstruction),
     }
 }
 
@@ -110,6 +110,6 @@ mod tests {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
         let result = super::decode_execute(&mut engine, 0);
-        assert_eq!(result, Err(EmbiveError::InvalidInstruction));
+        assert_eq!(result, Err(Error::InvalidInstruction));
     }
 }

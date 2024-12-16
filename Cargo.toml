@@ -18,3 +18,7 @@ readme = "README.md"
 default = []
 m_extension = []
 a_extension = []
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
