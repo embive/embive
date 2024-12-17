@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::instruction::format::TypeI;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
@@ -17,7 +17,7 @@ pub struct Load {}
 
 impl<M: Memory> Instruction<M> for Load {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error> {
         let inst = TypeI::from(data);
 
         let rs1 = engine.registers.cpu.get(inst.rs1)?;
@@ -39,7 +39,7 @@ impl<M: Memory> Instruction<M> for Load {
         // Go to next instruction
         engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
-        Ok(true)
+        Ok(EngineState::Running)
     }
 }
 
@@ -68,7 +68,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lb.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x12);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -89,7 +89,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lb.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -0x12);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -111,7 +111,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lh.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x3412);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -131,7 +131,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lh.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -28098);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -155,7 +155,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lw.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x78563412);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -175,7 +175,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lw.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -19088744);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -196,7 +196,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lbu.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x12);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -217,7 +217,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lbu.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             (-0x12i8 as u8) as i32
@@ -242,7 +242,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lhu.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x3412);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -262,7 +262,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
         let result = Load::decode_execute(lhu.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             (-28098i16 as u16) as i32

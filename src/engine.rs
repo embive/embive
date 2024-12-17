@@ -1,69 +1,19 @@
 //! Engine Module
+mod config;
+mod state;
+mod syscall;
 
 use crate::error::Error;
 use crate::instruction::decode_execute;
 use crate::memory::Memory;
 use crate::registers::{CPURegister, Registers};
 
-/// Number of syscall arguments
-pub const SYSCALL_ARGS: usize = 7;
-
-/// System call function signature
-///
-/// This function is called by the `ecall` instruction.
-/// The following registers are used:
-/// - `a7`: Syscall number.
-/// - `a0` to `a6`: Arguments.
-/// - `a0`: Return error code.
-/// - `a1`: Return value.
-///
-/// Arguments:
-/// - `nr`: Syscall number (`a7`).
-/// - `args`: Arguments (`a0` to `a6`).
-/// - `memory`: System Memory (code + RAM).
-///
-/// Returns:
-/// - `Result<i32, i32>`: value (`a1`), error (`a0`).
-pub type SyscallFn<M> = fn(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut M) -> Result<i32, i32>;
-
-/// Embive Engine Configuration Struct
-#[derive(Debug, PartialEq, Clone, Copy)]
-#[non_exhaustive]
-pub struct Config<M: Memory> {
-    /// System call function (Called by `ecall` instruction).
-    pub syscall_fn: Option<SyscallFn<M>>,
-    /// Instruction limit. Yield when the limit is reached (0 = No limit).
-    pub instruction_limit: u32,
-}
-
-impl<M: Memory> Config<M> {
-    /// Set the system call function and return the configuration.
-    ///
-    /// Arguments:
-    /// - `syscall_fn`: Optional system call function.
-    pub fn with_syscall_fn(mut self, syscall_fn: Option<SyscallFn<M>>) -> Self {
-        self.syscall_fn = syscall_fn;
-        self
-    }
-
-    /// Set the instruction limit and return the configuration.
-    ///
-    /// Arguments:
-    /// - `instruction_limit`: Instruction limit (0 = No limit).
-    pub fn with_instruction_limit(mut self, instruction_limit: u32) -> Self {
-        self.instruction_limit = instruction_limit;
-        self
-    }
-}
-
-impl<M: Memory> Default for Config<M> {
-    fn default() -> Self {
-        Config {
-            syscall_fn: None,
-            instruction_limit: 0,
-        }
-    }
-}
+#[doc(inline)]
+pub use config::Config;
+#[doc(inline)]
+pub use state::EngineState;
+#[doc(inline)]
+pub use syscall::{SyscallFn, SYSCALL_ARGS};
 
 /// Embive Engine Struct
 #[derive(Debug)]
@@ -121,28 +71,32 @@ impl<'a, M: Memory> Engine<'a, M> {
     ///     - `True`: Continue running (yielded, call `run` again).
     ///     - `False`: Stop running (halted, call `reset` prior to running again).
     /// - `Err(Error)`: Failed to run.
-    pub fn run(&mut self) -> Result<bool, Error> {
+    pub fn run(&mut self) -> Result<EngineState, Error> {
         // Check if there is an instruction limit
         if self.config.instruction_limit > 0 {
             // Run the engine with an instruction limit
             for _ in 0..self.config.instruction_limit {
                 // Step through the program
-                if !self.step()? {
+                let state = self.step()?;
+
+                if state != EngineState::Running {
                     // Stop running
-                    return Ok(false);
+                    return Ok(state);
                 }
             }
 
-            // Yield
-            return Ok(true);
+            // Yield after the instruction limit (still running)
+            return Ok(EngineState::Running);
         }
 
         // No instruction limit
         loop {
             // Step through the program
-            if !self.step()? {
+            let state = self.step()?;
+
+            if state != EngineState::Running {
                 // Stop running
-                return Ok(false);
+                return Ok(state);
             }
         }
     }
@@ -150,12 +104,10 @@ impl<'a, M: Memory> Engine<'a, M> {
     /// Step through a single instruction from the current program counter.
     ///
     /// Returns:
-    /// - `Ok(bool)`: Success, returns if should continue:
-    ///     - `True`: Should continue.
-    ///     - `False`: Should stop (halted).
+    /// - `Ok(EngineState)`: Success, current engine state.
     /// - `Err(Error)`: Failed to execute.
-    #[inline]
-    pub fn step(&mut self) -> Result<bool, Error> {
+    #[inline(always)]
+    pub fn step(&mut self) -> Result<EngineState, Error> {
         // Fetch next instruction
         let data = self.fetch()?;
 
@@ -170,10 +122,28 @@ impl<'a, M: Memory> Engine<'a, M> {
     /// Returns:
     /// - `Ok(u32)`: The instruction (raw) that was fetched.
     /// - `Err(Error)`: The program counter is out of bounds.
-    #[inline]
+    #[inline(always)]
     pub fn fetch(&mut self) -> Result<u32, Error> {
         let data = self.memory.load::<4>(self.program_counter)?;
         Ok(u32::from_le_bytes(data))
+    }
+
+    /// Set engine to the callback/interrupt configured by the interpreted code.
+    /// This call does not execute any interpreted code, [`Engine::run`] should be called after.
+    ///
+    /// Interrupts are enabled by setting CSRs `mstatus.MIE` and `mie.MEIP`,
+    /// as well as configuring `mtvec` with a valid address.
+    ///
+    /// Returns:
+    /// - `Ok(())`: Success, engine is set to the callback/interrupt.
+    /// - `Err(Error)`: Callback not enabled by interpreted code.
+    pub fn callback(&mut self) -> Result<(), Error> {
+        self.program_counter = self
+            .registers
+            .control_status
+            .trap_entry(self.program_counter)?;
+
+        Ok(())
     }
 
     /// Handle a system call.
@@ -257,12 +227,12 @@ mod tests {
 
         // Run the engine
         let result = engine.run();
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 4 * 2);
 
         // Run the engine again
         let result = engine.run();
-        assert_eq!(result, Ok(false));
+        assert_eq!(result, Ok(EngineState::Halted));
         assert_eq!(engine.program_counter, 4 * 4);
     }
 
@@ -287,7 +257,63 @@ mod tests {
 
         // Run the engine
         let result = engine.run();
-        assert_eq!(result, Ok(false));
+        assert_eq!(result, Ok(EngineState::Halted));
         assert_eq!(engine.program_counter, 4 * 4);
+    }
+
+    #[test]
+    fn test_callback() {
+        let code = &[
+            0x93, 0x00, 0x80, 0x00, // li   ra, 8
+            0xf3, 0x90, 0x00, 0x30, // csrrw ra, mstatus, ra
+            0x93, 0x00, 0x00, 0x80, // li   ra, -2048
+            0xf3, 0x90, 0x40, 0x30, // csrrw ra, mie, ra
+            0x93, 0x00, 0x80, 0x02, // li   ra, 40
+            0xf3, 0x90, 0x50, 0x30, // csrrw ra, mtvec, ra
+            0x13, 0x01, 0x70, 0x03, // li   sp, 55
+            0x73, 0x00, 0x50, 0x10, // wfi
+            0x93, 0x01, 0x70, 0x03, // li   gp, 55
+            0x73, 0x00, 0x10, 0x00, // ebreak
+            0x13, 0x01, 0x60, 0x01, // li   sp, 22
+            0x73, 0x00, 0x20, 0x30, // mret
+        ];
+
+        let mut memory = SliceMemory::new(code, &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
+
+        // Run the engine
+        let result = engine.run();
+        assert_eq!(result, Ok(EngineState::Waiting));
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::SP as usize).unwrap(),
+            55
+        );
+
+        // Callback
+        let result = engine.callback();
+        assert_eq!(result, Ok(()));
+        assert_eq!(engine.program_counter, 40);
+
+        // Run the engine again
+        let result = engine.run();
+        assert_eq!(result, Ok(EngineState::Halted));
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::SP as usize).unwrap(),
+            22
+        );
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::GP as usize).unwrap(),
+            55
+        );
+    }
+
+    #[test]
+    fn test_callback_disabled() {
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
+
+        // Callback
+        let result = engine.callback();
+        assert_eq!(result, Err(Error::CallbackNotEnabled));
     }
 }

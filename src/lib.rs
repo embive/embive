@@ -2,10 +2,10 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc = include_str!("../README.md")]
 #![doc(
-    html_logo_url = "https://avatars.githubusercontent.com/u/188724632",
-    html_favicon_url = "https://avatars.githubusercontent.com/u/188724632"
+    html_logo_url = "https://raw.githubusercontent.com/embive/embive/6da108bce7d0d01ac15ccb78786b68310c83289e/assets/embive_logo.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/embive/embive/6da108bce7d0d01ac15ccb78786b68310c83289e/assets/embive_logo.svg"
 )]
-#![warn(missing_docs, rust_2018_idioms)]
+#![warn(missing_docs, rust_2018_idioms, future_incompatible, keyword_idents)]
 #![deny(unsafe_code)]
 
 pub mod engine;

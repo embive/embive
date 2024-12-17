@@ -94,6 +94,11 @@ System calls are a way for the untrusted code to interact with the host environm
 When provided to the engine, the system call function will be called when the `ecall` instruction is executed.
 You can check more information about system calls in the `engine::SyscallFn` documentation.
 
+## Callbacks
+Callbacks are external interrupts executed by the interpreted code. These interrupts allow code to be ran more efficiently.
+As an example, a sleep/delay function can be implemented by using the `wfi` instruction, with the host enviroment then
+calling the callback after a given amount of time has passed. This way, no busy-looping is needed on the interpreted code.
+
 ## Features
 Check the available features and their descriptions below:
 
@@ -105,7 +110,7 @@ Check the available features and their descriptions below:
         - Disabled by default, no additional dependencies.
 
 ## Roadmap
-- [ ] Fully support `RV32IMAZicsr_Zifencei` (machine-mode)
+- [x] Fully support `RV32IMAZicsr_Zifencei` (machine-mode)
     - [x] RV32I Base Integer Instruction Set
     - [x] M Extension (Multiplication and Division Instructions)
     - [x] Zifencei
@@ -113,19 +118,19 @@ Check the available features and their descriptions below:
     - [x] A Extension (Atomic Instructions)
     - [x] Zicsr
         - Implement the minimum machine-mode CSRs (Needed for supporting callbacks)
-    - [ ] Machine-mode instructions (MRET & WFI)
+    - [x] Machine-mode instructions (MRET & WFI)
 - [x] System Calls
     - Function calls from interpreted to native code
 - [x] Resource limiter
     - Yield the engine after a configurable amount of instructions are executed.
 - [x] CI/CD
     - Incorporate more tests into the repository and create test automations for PRs
-- [ ] Bytecode optimization (AOT and JIT)
-    - Allow in-place JIT and AOT compilation to a format easier to parse.
+- [x] Callbacks
+    - Function calls from native to interpreted code.
+- [ ] Bytecode optimization
+    - Allow in-place compilation to a format easier to parse.
         - Less bit-shifting, faster instruction matching, etc.
     - Should be kept as close as possible to native RISC-V bytecode.
-- [ ] Callbacks
-    - Function calls from native to interpreted code.
 - [ ] Macros for converting native functions to system calls / callbacks
     - Use Rust type-system instead of only allowing `i32` arguments / results
 

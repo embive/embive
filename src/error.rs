@@ -15,6 +15,8 @@ pub enum Error {
     InvalidCPURegister,
     /// Control and Status Register is invalid or not supported.
     InvalidCSRegister,
+    /// Callback/Interrupt not enabled by interpreted code.
+    CallbackNotEnabled,
     /// No syscall function is set.
     NoSyscallFunction,
     /// Custom error.

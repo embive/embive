@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::instruction::format::TypeR;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
@@ -25,7 +25,7 @@ pub struct Amo {}
 
 impl<M: Memory> Instruction<M> for Amo {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error> {
         let inst = TypeR::from(data);
 
         let rs1 = engine.registers.cpu.get(inst.rs1)? as u32;
@@ -129,7 +129,7 @@ impl<M: Memory> Instruction<M> for Amo {
         engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
         // Continue execution
-        Ok(true)
+        Ok(EngineState::Running)
     }
 }
 
@@ -156,7 +156,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 16);
@@ -180,7 +180,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 2);
@@ -204,7 +204,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(engine.memory_reservation, Some((RAM_OFFSET as u32, 14)));
@@ -230,7 +230,7 @@ mod tests {
         engine.memory_reservation = Some((RAM_OFFSET as u32, 14));
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(i32::from_le_bytes(ram), 2);
@@ -254,7 +254,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 12);
@@ -278,7 +278,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 15);
@@ -302,7 +302,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 14);
         assert_eq!(i32::from_le_bytes(ram), 2);
@@ -326,7 +326,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -14);
         assert_eq!(i32::from_le_bytes(ram), -14);
@@ -350,7 +350,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -14);
         assert_eq!(i32::from_le_bytes(ram), 3);
@@ -374,7 +374,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -14);
         assert_eq!(i32::from_le_bytes(ram), 3);
@@ -398,7 +398,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = RAM_OFFSET as i32;
 
         let result = Amo::decode_execute(amo.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
 
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -14);
         assert_eq!(i32::from_le_bytes(ram), -14);

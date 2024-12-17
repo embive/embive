@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::instruction::format::TypeB;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
@@ -18,7 +18,7 @@ pub struct Branch {}
 
 impl<M: Memory> Instruction<M> for Branch {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error> {
         let inst = TypeB::from(data);
 
         let rs1 = engine.registers.cpu.get(inst.rs1)?;
@@ -42,7 +42,7 @@ impl<M: Memory> Instruction<M> for Branch {
             engine.program_counter.wrapping_add(INSTRUCTION_SIZE)
         };
 
-        Ok(true)
+        Ok(EngineState::Running)
     }
 }
 
@@ -68,7 +68,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x1u32.wrapping_sub(0x100u32));
     }
 
@@ -88,7 +88,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x101);
     }
 
@@ -108,7 +108,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
@@ -128,7 +128,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
@@ -148,7 +148,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x101);
     }
 
@@ -168,7 +168,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x101);
     }
 
@@ -188,7 +188,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
@@ -208,7 +208,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x101);
     }
 
@@ -228,7 +228,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x101);
     }
 
@@ -247,7 +247,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
@@ -267,7 +267,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x101);
     }
 
@@ -287,7 +287,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 
@@ -307,7 +307,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x101);
     }
 
@@ -327,7 +327,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x101);
     }
 
@@ -347,7 +347,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = -0x1;
 
         let result = Branch::decode_execute(branch.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }
 }

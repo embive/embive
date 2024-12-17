@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::instruction::format::TypeS;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
@@ -15,7 +15,7 @@ pub struct Store {}
 
 impl<M: Memory> Instruction<M> for Store {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error> {
         let inst = TypeS::from(data);
 
         let rs1 = engine.registers.cpu.get(inst.rs1)?;
@@ -32,7 +32,7 @@ impl<M: Memory> Instruction<M> for Store {
         // Go to next instruction
         engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
-        Ok(true)
+        Ok(EngineState::Running)
     }
 }
 
@@ -61,7 +61,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x2;
 
         let result = Store::decode_execute(store.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
         assert_eq!(ram[1], 0x2);
     }
@@ -82,7 +82,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
         let result = Store::decode_execute(store.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
         assert_eq!(ram[2..4], [0x34, 0x12]);
     }
@@ -103,7 +103,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x12345678;
 
         let result = Store::decode_execute(store.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
         assert_eq!(ram[0..4], [0x78, 0x56, 0x34, 0x12]);
     }

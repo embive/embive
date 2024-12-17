@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::instruction::format::TypeR;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
@@ -53,7 +53,7 @@ pub struct Op {}
 
 impl<M: Memory> Instruction<M> for Op {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error> {
         let inst = TypeR::from(data);
 
         let rs1 = engine.registers.cpu.get(inst.rs1)?;
@@ -122,7 +122,7 @@ impl<M: Memory> Instruction<M> for Op {
         // Go to next instruction
         engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
-        Ok(true)
+        Ok(EngineState::Running)
     }
 }
 
@@ -148,7 +148,7 @@ mod tests {
 
         let result = Op::decode_execute(op.into(), &mut engine);
         assert_eq!(start_regs, engine.registers);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
 
@@ -166,7 +166,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 20;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 30);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -185,7 +185,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 1;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), i32::MIN);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -204,7 +204,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 10);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -223,7 +223,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 1;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), i32::MAX);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -243,7 +243,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 0b1100;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0b0110);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -263,7 +263,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 0b1100;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0b1110);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -283,7 +283,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 0b1100;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0b1000);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -303,7 +303,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 2;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0b101000);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -323,7 +323,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 2;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0b10);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -343,7 +343,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 28;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0xB);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -363,7 +363,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 2;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0b10);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -383,7 +383,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 28;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             0xFFFFFFFBu32 as i32
@@ -406,7 +406,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 20;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -426,7 +426,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -446,7 +446,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 20;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -466,7 +466,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = -20;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -486,7 +486,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 20;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -506,7 +506,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -526,7 +526,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -546,7 +546,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = -20;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -566,7 +566,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 20;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 200);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -586,7 +586,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = -2;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 20);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -606,7 +606,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 2;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             (((i32::MAX as i64) * 2) >> 32) as i32
@@ -629,7 +629,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 2;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             (((i32::MAX as i64) * 2) >> 32) as u32 as i32
@@ -652,7 +652,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = u32::MAX as i32;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             ((-2 * (u32::MAX as i64)) >> 32) as u32 as i32
@@ -675,7 +675,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 2;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             (((i32::MAX as u64) * 2) >> 32) as i32
@@ -698,7 +698,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 2);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -718,7 +718,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -2);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -738,7 +738,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             (u32::MAX / 10) as i32
@@ -761,7 +761,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -781,7 +781,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 10;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), -1);
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
     }
@@ -801,7 +801,7 @@ mod tests {
         *engine.registers.cpu.get_mut(3).unwrap() = 1;
 
         let result = Op::decode_execute(op.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(
             *engine.registers.cpu.get_mut(1).unwrap(),
             (u32::MAX % 1) as i32

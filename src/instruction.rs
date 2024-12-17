@@ -14,7 +14,7 @@ mod op_imm;
 mod store;
 mod system;
 
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::memory::Memory;
 
@@ -59,11 +59,9 @@ trait Instruction<M: Memory> {
     /// - `engine`: Mutable pointer to embive engine.
     ///
     /// Returns:
-    /// - `Ok(bool)`: Instruction executed successfully:
-    ///     - `True`: Should continue execution.
-    ///     - `False`: Should halt.
+    /// - `Ok(EngineState)`: Instruction executed successfully.
     /// - `Err(Error)`: Failed to execute instruction.
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error>;
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error>;
 }
 
 /// Decode and execute an instruction.
@@ -73,15 +71,13 @@ trait Instruction<M: Memory> {
 /// - `data`: `u32` value representing the instruction.
 ///
 /// Returns:
-/// - `Ok(bool)`: The instruction was decoded and executed successfully:
-///     - `True`: Should continue execution.
-///     - `False`: Should halt.
+/// - `Ok(EngineState)`: The instruction was decoded and executed successfully.
 /// - `Err(Error)`: Failed to decode or execute instruction.
 #[inline]
 pub(crate) fn decode_execute<M: Memory>(
     engine: &mut Engine<'_, M>,
     data: u32,
-) -> Result<bool, Error> {
+) -> Result<EngineState, Error> {
     match (data & 0x7F) as u8 {
         LOAD_OPCODE => Load::decode_execute(data, engine),
         MISC_MEM_OPCODE => MiscMem::decode_execute(data, engine),

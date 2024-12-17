@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::instruction::format::TypeI;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
@@ -12,7 +12,7 @@ pub struct Jalr {}
 
 impl<M: Memory> Instruction<M> for Jalr {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error> {
         let inst = TypeI::from(data);
 
         // Get the value of the source register.
@@ -28,7 +28,7 @@ impl<M: Memory> Instruction<M> for Jalr {
         engine.program_counter = (rs1 as u32).wrapping_add_signed(inst.imm);
 
         // Continue execution
-        Ok(true)
+        Ok(EngineState::Running)
     }
 }
 
@@ -53,7 +53,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = -0x200;
 
         let result = Jalr::decode_execute(jalr.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(engine.program_counter, (-0x200i32 + -0x100i32) as u32);
     }
@@ -73,7 +73,7 @@ mod tests {
         *engine.registers.cpu.get_mut(2).unwrap() = 0x200;
 
         let result = Jalr::decode_execute(jalr.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(engine.program_counter, 0x300);
     }
@@ -93,7 +93,7 @@ mod tests {
         *engine.registers.cpu.get_mut(1).unwrap() = 0x200;
 
         let result = Jalr::decode_execute(jalr.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(engine.program_counter, 0x300);
     }

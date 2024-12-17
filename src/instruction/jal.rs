@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::instruction::format::TypeJ;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
@@ -12,7 +12,7 @@ pub struct Jal {}
 
 impl<M: Memory> Instruction<M> for Jal {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error> {
         let inst = TypeJ::from(data);
 
         // Load pc + instruction size into the destination register.
@@ -25,7 +25,7 @@ impl<M: Memory> Instruction<M> for Jal {
         engine.program_counter = engine.program_counter.wrapping_add_signed(inst.imm);
 
         // Continue execution
-        Ok(true)
+        Ok(EngineState::Running)
     }
 }
 
@@ -43,7 +43,7 @@ mod tests {
         let jal = TypeJ { rd: 1, imm: 0x1000 };
 
         let result = Jal::decode_execute(jal.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(engine.program_counter, 0x1 + 0x1000);
     }

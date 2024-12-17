@@ -1,4 +1,4 @@
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineState};
 use crate::error::Error;
 use crate::instruction::format::TypeU;
 use crate::instruction::{Instruction, INSTRUCTION_SIZE};
@@ -12,7 +12,7 @@ pub struct Lui {}
 
 impl<M: Memory> Instruction<M> for Lui {
     #[inline(always)]
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<bool, Error> {
+    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error> {
         let inst = TypeU::from(data);
 
         if inst.rd != 0 {
@@ -26,7 +26,7 @@ impl<M: Memory> Instruction<M> for Lui {
         engine.program_counter = engine.program_counter.wrapping_add(INSTRUCTION_SIZE);
 
         // Continue execution
-        Ok(true)
+        Ok(EngineState::Running)
     }
 }
 
@@ -44,7 +44,7 @@ mod tests {
         let lui = TypeU { rd: 1, imm: 0x1000 };
 
         let result = Lui::decode_execute(lui.into(), &mut engine);
-        assert_eq!(result, Ok(true));
+        assert_eq!(result, Ok(EngineState::Running));
         assert_eq!(*engine.registers.cpu.get_mut(1).unwrap(), 0x1000);
         assert_eq!(engine.program_counter, 0x1 + INSTRUCTION_SIZE);
     }

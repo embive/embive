@@ -57,15 +57,16 @@ const MEPC_BIT0: u32 = 0b1;
 const MSTATUS_MIE: u32 = 0b1 << 3;
 /// MSTATUS MPIE bit
 const MSTATUS_MPIE: u32 = 0b1 << 7;
-/// MSTATUS MPP bits
-const MSTATUS_MPP: u32 = 0b11 << 11;
 /// MSTATUS write mask
-const MSTATUS_MASK: u32 = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPP;
+const MSTATUS_MASK: u32 = MSTATUS_MIE | MSTATUS_MPIE;
 
-/// MIE & MIP MEIx bit
-const MI_E_P_MEI: u32 = 0b1 << 11;
-/// MIE write mask
-const MIE_MASK: u32 = MI_E_P_MEI;
+/// MCAUSE Machine External Interrupt code
+const MCAUSE_MEI_CODE: u32 = 11;
+/// MCAUSE interrupt bit
+const MCAUSE_INTERRUPT: u32 = 0b1 << 31;
+
+/// MIE write mask (MEIE)
+const MIE_MASK: u32 = 0b1 << 11;
 
 /// Control and Status Operation
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -98,19 +99,19 @@ const fn get_misa() -> u32 {
 
 /// Control and Status Registers
 /// Supported CSRs:
-/// - MSTATUS (MIE, MPIE, MPP)
+/// - MSTATUS (MIE, MPIE)
 /// - MISA (Read-only)
 /// - MIE (MEIE)
 /// - MTVEC (Direct mode only)
-/// - MSCRATCH
 /// - MEPC
 /// - MCAUSE
-/// - MIP (Read-only: MEIP)
 ///
 /// Ignored CSRs (read-only as 0):
 /// - MSTATUSH
 /// - MCOUNTINHIBIT..MHPMEVENT31
+/// - MSCRATCH
 /// - MTVAL
+/// - MIP
 /// - MCYCLE..MHPMCOUNTER31
 /// - MVENDORID..MCONFIGPTR
 #[derive(Debug, Default, PartialEq, Copy, Clone)]
@@ -121,14 +122,10 @@ pub struct CSRegisters {
     mie: u32,
     /// Machine Trap Vector
     mtvec: u32,
-    /// Machine Scratch Register
-    mscratch: u32,
     /// Machine Exception Program Counter
     mepc: u32,
     /// Machine Cause Register
     mcause: u32,
-    /// Machine Interrupt Pending
-    mip: u32,
 }
 
 impl CSRegisters {
@@ -164,11 +161,7 @@ impl CSRegisters {
             }
             MSTATUSH_ADDR => Ok(0), // Ignore high mstatus
             MCOUNTINHIBIT_ADDR..=MHPMEVENT31_ADDR => Ok(0), // Ignore counters
-            MSCRATCH_ADDR => {
-                let ret = self.mscratch;
-                self.mscratch = execute_operation(op, self.mscratch);
-                Ok(ret)
-            }
+            MSCRATCH_ADDR => Ok(0), // Ignore mscratch
             MEPC_ADDR => {
                 let ret = self.mepc;
                 // Bit 0 is always 0
@@ -181,11 +174,64 @@ impl CSRegisters {
                 Ok(ret)
             }
             MTVAL_ADDR => Ok(0),                       // Ignore trap value
-            MIP_ADDR => Ok(self.mip),                  // Read only
+            MIP_ADDR => Ok(0),                         // Ignore pending interrupts
             MCYCLE_ADDR..=MHPMCOUNTER31_ADDR => Ok(0), // Ignore counters
             MVENDORID_ADDR..=MCONFIGPTR_ADDR => Ok(0), // IDs are always 0
             _ => Err(Error::InvalidCSRegister),
         }
+    }
+
+    /// Trap Entry.
+    /// This function triggers an interrupt/callback.
+    /// What it does:
+    /// - Copy `mstatus.MIE` to `mstatus.MPIE`, then set `mstatus.MIE` to 0.
+    /// - Set `mcause` as a machine external interrupt.
+    /// - Copy the received `PC` to `mepc`.
+    /// - Return the new `PC` value.
+    ///
+    /// Arguments:
+    /// - `pc`: The current program counter.
+    ///
+    /// Returns:
+    /// - `Ok(u32)`: The new program counter.
+    /// - `Err(Error)`: Failed to handle the interrupt.
+    pub(crate) fn trap_entry(&mut self, pc: u32) -> Result<u32, Error> {
+        // Check if interrupts are enabled (mstatus.MIE or mie.MEIP)
+        if (self.mstatus & MSTATUS_MIE) == 0 || (self.mie & MIE_MASK) == 0 {
+            return Err(Error::CallbackNotEnabled);
+        }
+
+        // Set MPIE and clear MIE
+        self.mstatus = (self.mstatus & !MSTATUS_MIE) | MSTATUS_MPIE;
+
+        // Set mcause
+        self.mcause = MCAUSE_INTERRUPT | MCAUSE_MEI_CODE;
+
+        // Copy PC to MEPC
+        self.mepc = pc;
+
+        // Return the new PC
+        Ok(self.mtvec)
+    }
+
+    /// Trap Return.
+    /// This function returns from an interrupt/callback.
+    /// What it does:
+    /// - Restore `mstatus.MIE` from `mstatus.MPIE`.
+    /// - Return the program counter from `mepc`.
+    ///
+    /// Returns:
+    /// - `u32`: The program counter from `mepc`.
+    pub(crate) fn trap_return(&mut self) -> u32 {
+        // Copy MPIE to MIE
+        if (self.mstatus & MSTATUS_MPIE) != 0 {
+            self.mstatus |= MSTATUS_MIE;
+        } else {
+            self.mstatus &= !MSTATUS_MIE;
+        }
+
+        // Return the PC
+        self.mepc
     }
 }
 
@@ -245,17 +291,6 @@ mod tests {
             Ok(0)
         );
         assert_eq!(cs.operation(None, MTVEC_ADDR), Ok(0x12FF & !MTVEC_MODE));
-    }
-
-    #[test]
-    fn test_mscratch() {
-        let mut cs = CSRegisters::default();
-
-        assert_eq!(
-            cs.operation(Some(CSOperation::Write(0xFFFF)), MSCRATCH_ADDR),
-            Ok(0)
-        );
-        assert_eq!(cs.operation(None, MSCRATCH_ADDR), Ok(0xFFFF));
     }
 
     #[test]
