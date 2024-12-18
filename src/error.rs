@@ -15,8 +15,10 @@ pub enum Error {
     InvalidCPURegister,
     /// Control and Status Register is invalid or not supported.
     InvalidCSRegister,
-    /// Callback/Interrupt not enabled by interpreted code.
-    CallbackNotEnabled,
+    /// Engine state is invalid for the method called.
+    InvalidEngineState,
+    /// Interrupt not enabled by interpreted code (CSR `mie` bit [`crate::engine::EMBIVE_INTERRUPT_CODE`]).
+    InterruptNotEnabled,
     /// No syscall function is set.
     NoSyscallFunction,
     /// Custom error.

@@ -16,4 +16,6 @@ pub struct Registers {
     pub cpu: CPURegisters,
     /// Control and Status Registers
     pub control_status: CSRegisters,
+    /// Backup of CPU Registers (for callbacks/interrupts)
+    pub(crate) cpu_backup: Option<CPURegisters>,
 }

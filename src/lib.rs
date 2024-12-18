@@ -19,6 +19,7 @@ pub use error::Error;
 
 #[cfg(test)]
 mod tests {
+    use core::num::NonZeroI32;
     use std::{
         fs::{read_dir, DirEntry},
         path::PathBuf,
@@ -44,7 +45,7 @@ mod tests {
         nr: i32,
         args: &[i32; SYSCALL_ARGS],
         _memory: &mut SliceMemory<'_>,
-    ) -> Result<i32, i32> {
+    ) -> Result<i32, NonZeroI32> {
         if nr == 93 {
             if args[0] == 0 {
                 println!("Test was successful");

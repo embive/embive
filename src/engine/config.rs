@@ -10,12 +10,13 @@ use super::SyscallFn;
 pub struct Config<M: Memory> {
     /// System call function (Called by `ecall` instruction).
     pub syscall_fn: Option<SyscallFn<M>>,
-    /// Instruction limit. Yield when the limit is reached (0 = No limit).
+    /// Instruction limit. Yield the engine when the limit is reached (0 = No limit).
     pub instruction_limit: u32,
 }
 
 impl<M: Memory> Config<M> {
     /// Set the system call function and return the configuration.
+    /// The function is called by the `ecall` instruction.
     ///
     /// Arguments:
     /// - `syscall_fn`: Optional system call function.
@@ -25,9 +26,10 @@ impl<M: Memory> Config<M> {
     }
 
     /// Set the instruction limit and return the configuration.
+    /// Yield the engine when the limit is reached (0 = No limit).
     ///
     /// Arguments:
-    /// - `instruction_limit`: Instruction limit (0 = No limit).
+    /// - `instruction_limit`: Instruction limit.
     pub fn with_instruction_limit(mut self, instruction_limit: u32) -> Self {
         self.instruction_limit = instruction_limit;
         self

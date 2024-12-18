@@ -3,10 +3,16 @@
 /// Embive Engine State
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum EngineState {
-    /// Engine running (yielded for some reason, ex: instruction limit reached). Call [`super::Engine::run`] to continue.
+    /// Engine running. Call [`super::Engine::run`] to continue running.
     Running,
-    /// Engine waiting callback/event (WFI instruction). Call [`super::Engine::callback`] and then [`super::Engine::run`] to continue.
+    /// Engine waiting interrupt. Call [`super::Engine::run`] to continue running. (Optionally call [`super::Engine::interrupt`] prior to trigger an interrupt).
     Waiting,
-    /// Engine halted (ebreak instruction). Call [`super::Engine::reset`] and then [`super::Engine::run`] to run again.
+    /// Engine halted. Call [`super::Engine::reset`] and then [`super::Engine::run`] to run again.
     Halted,
+}
+
+impl Default for EngineState {
+    fn default() -> Self {
+        Self::Running
+    }
 }

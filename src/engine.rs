@@ -15,6 +15,9 @@ pub use state::EngineState;
 #[doc(inline)]
 pub use syscall::{SyscallFn, SYSCALL_ARGS};
 
+/// Embive Custom Interrupt Code
+pub const EMBIVE_INTERRUPT_CODE: u32 = 16;
+
 /// Embive Engine Struct
 #[derive(Debug)]
 #[non_exhaustive]
@@ -63,13 +66,10 @@ impl<'a, M: Memory> Engine<'a, M> {
         }
     }
 
-    /// Run the engine
-    /// If configured, the engine will yield when the instruction limit is reached.
+    /// Run the engine, executing the interpreted code.
     ///
     /// Returns:
-    /// - `Ok(bool)`: Success, returns if should continue:
-    ///     - `True`: Continue running (yielded, call `run` again).
-    ///     - `False`: Stop running (halted, call `reset` prior to running again).
+    /// - `Ok(EngineState)`: Success, current engine state (check [`EngineState`]).
     /// - `Err(Error)`: Failed to run.
     pub fn run(&mut self) -> Result<EngineState, Error> {
         // Check if there is an instruction limit
@@ -104,7 +104,7 @@ impl<'a, M: Memory> Engine<'a, M> {
     /// Step through a single instruction from the current program counter.
     ///
     /// Returns:
-    /// - `Ok(EngineState)`: Success, current engine state.
+    /// - `Ok(EngineState)`: Success, current engine state (check [`EngineState`]).
     /// - `Err(Error)`: Failed to execute.
     #[inline(always)]
     pub fn step(&mut self) -> Result<EngineState, Error> {
@@ -128,20 +128,33 @@ impl<'a, M: Memory> Engine<'a, M> {
         Ok(u32::from_le_bytes(data))
     }
 
-    /// Set engine to the callback/interrupt configured by the interpreted code.
-    /// This call does not execute any interpreted code, [`Engine::run`] should be called after.
+    /// Execute an interrupt as configured by the interpreted code.
+    /// This call does not run any interpreted code, [`Engine::run`] should be called after.
+    /// Interrupt must be configured/enabled by the interpreted code for this function to succeed.
     ///
-    /// Interrupts are enabled by setting CSRs `mstatus.MIE` and `mie.MEIP`,
-    /// as well as configuring `mtvec` with a valid address.
+    /// Interrupt traps are enabled by setting CSRs `mstatus.MIE` and `mie` bit [`EMBIVE_INTERRUPT_CODE`], as well as
+    /// configuring `mtvec` with a valid address. If done correctly, the engine will set the interrupt pending bit
+    /// (`mip` bit [`EMBIVE_INTERRUPT_CODE`]) and jump to the address in `stvec` when an interrupt is triggered.
+    ///
+    /// The interrupt pending (`mip`) bit [`EMBIVE_INTERRUPT_CODE`] can be cleared by manually writing 0 to it.
     ///
     /// Returns:
-    /// - `Ok(())`: Success, engine is set to the callback/interrupt.
-    /// - `Err(Error)`: Callback not enabled by interpreted code.
-    pub fn callback(&mut self) -> Result<(), Error> {
-        self.program_counter = self
-            .registers
+    /// - `Ok(())`: Success, interrupt executed.
+    /// - `Err(Error)`: Interrupt not enabled by interpreted code.
+    pub fn interrupt(&mut self) -> Result<(), Error> {
+        // Check if interrupt is enabled
+        if !self.registers.control_status.interrupt_enabled() {
+            // Interrupt is not enabled
+            return Err(Error::InterruptNotEnabled);
+        }
+
+        // Set interrupt
+        self.registers.control_status.set_interrupt();
+
+        // Trap to the interrupt handler
+        self.registers
             .control_status
-            .trap_entry(self.program_counter)?;
+            .trap_entry(&mut self.program_counter);
 
         Ok(())
     }
@@ -176,7 +189,7 @@ impl<'a, M: Memory> Engine<'a, M> {
                 }
                 Err(error) => {
                     // Set error code
-                    self.registers.cpu.inner[CPURegister::A0 as usize] = error;
+                    self.registers.cpu.inner[CPURegister::A0 as usize] = error.into();
 
                     // Clear return value
                     self.registers.cpu.inner[CPURegister::A1 as usize] = 0;
@@ -193,9 +206,168 @@ impl<'a, M: Memory> Engine<'a, M> {
 
 #[cfg(test)]
 mod tests {
+    use core::num::NonZeroI32;
+
     use crate::memory::SliceMemory;
 
     use super::*;
+
+    fn syscall<M: Memory>(
+        nr: i32,
+        args: &[i32; SYSCALL_ARGS],
+        _memory: &mut M,
+    ) -> Result<i32, NonZeroI32> {
+        // Match the syscall number
+        match nr {
+            0 => Ok(0),
+            1 => {
+                // Check all 7 arguments
+                if args[0] == 1
+                    && args[1] == 2
+                    && args[2] == 3
+                    && args[3] == 4
+                    && args[4] == -5
+                    && args[5] == -6
+                    && args[6] == -7
+                {
+                    Ok(-1)
+                } else {
+                    Err((-1i32).try_into().unwrap())
+                }
+            }
+            _ => Err(1.try_into().unwrap()), // Not implemented
+        }
+    }
+
+    #[test]
+    fn test_syscall() {
+        let code = &[
+            0x93, 0x08, 0x00, 0x00, // li   a7, 0
+            0x73, 0x00, 0x00, 0x00, // ecall
+            0x73, 0x00, 0x10, 0x00, // ebreak
+        ];
+
+        // Create memory from code and RAM slices
+        let mut memory = SliceMemory::new(code, &mut []);
+
+        // Create engine config
+        let config = Config::default().with_syscall_fn(Some(syscall));
+
+        // Create engine & run it
+        let mut engine = Engine::new(&mut memory, config).unwrap();
+        engine.run().unwrap();
+
+        // Check the result (Ok(0))
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::A0 as usize).unwrap(),
+            0
+        );
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::A1 as usize).unwrap(),
+            0
+        );
+    }
+
+    #[test]
+    fn test_syscall_error() {
+        let code = &[
+            0x93, 0x08, 0x20, 0x00, // li   a7, 2
+            0x73, 0x00, 0x00, 0x00, // ecall
+            0x73, 0x00, 0x10, 0x00, // ebreak
+        ];
+
+        // Create memory from code and RAM slices
+        let mut memory = SliceMemory::new(code, &mut []);
+
+        // Create engine config
+        let config = Config::default().with_syscall_fn(Some(syscall));
+
+        // Create engine & run it
+        let mut engine = Engine::new(&mut memory, config).unwrap();
+        engine.run().unwrap();
+
+        // Check the result (Err(1))
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::A0 as usize).unwrap(),
+            1
+        );
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::A1 as usize).unwrap(),
+            0
+        );
+    }
+
+    #[test]
+    fn test_syscall_args() {
+        let code = &[
+            0x93, 0x08, 0x10, 0x00, // li   a7, 1
+            0x13, 0x05, 0x10, 0x00, // li   a0, 1
+            0x93, 0x05, 0x20, 0x00, // li   a1, 2
+            0x13, 0x06, 0x30, 0x00, // li   a2, 3
+            0x93, 0x06, 0x40, 0x00, // li   a3, 4
+            0x13, 0x07, 0xb0, 0xff, // li   a4, -5
+            0x93, 0x07, 0xa0, 0xff, // li   a5, -6
+            0x13, 0x08, 0x90, 0xff, // li   a6, -7
+            0x73, 0x00, 0x00, 0x00, // ecall
+            0x73, 0x00, 0x10, 0x00, // ebreak
+        ];
+
+        // Create memory from code and RAM slices
+        let mut memory = SliceMemory::new(code, &mut []);
+
+        // Create engine config
+        let config = Config::default().with_syscall_fn(Some(syscall));
+
+        // Create engine & run it
+        let mut engine = Engine::new(&mut memory, config).unwrap();
+        engine.run().unwrap();
+
+        // Check the result (Ok(-1))
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::A0 as usize).unwrap(),
+            0
+        );
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::A1 as usize).unwrap(),
+            -1
+        );
+    }
+
+    #[test]
+    fn test_syscall_args_error() {
+        let code = &[
+            0x93, 0x08, 0x10, 0x00, // li   a7, 1
+            0x13, 0x05, 0xf0, 0xff, // li   a0, -1
+            0x93, 0x05, 0xe0, 0xff, // li   a1, -2
+            0x13, 0x06, 0xd0, 0xff, // li   a2, -3
+            0x93, 0x06, 0xc0, 0xff, // li   a3, -4
+            0x13, 0x07, 0x50, 0x00, // li   a4, 5
+            0x93, 0x07, 0x60, 0x00, // li   a5, 6
+            0x13, 0x08, 0x70, 0x00, // li   a6, 7
+            0x73, 0x00, 0x00, 0x00, // ecall
+            0x73, 0x00, 0x10, 0x00, // ebreak
+        ];
+
+        // Create memory from code and RAM slices
+        let mut memory = SliceMemory::new(code, &mut []);
+
+        // Create engine config
+        let config = Config::default().with_syscall_fn(Some(syscall));
+
+        // Create engine & run it
+        let mut engine = Engine::new(&mut memory, config).unwrap();
+        engine.run().unwrap();
+
+        // Check the result (Err(-1))
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::A0 as usize).unwrap(),
+            -1
+        );
+        assert_eq!(
+            engine.registers.cpu.get(CPURegister::A1 as usize).unwrap(),
+            0
+        );
+    }
 
     #[test]
     fn test_reset() {
@@ -262,7 +434,7 @@ mod tests {
     }
 
     #[test]
-    fn test_callback() {
+    fn test_interrupt() {
         let code = &[
             0x93, 0x00, 0x80, 0x00, // li   ra, 8
             0xf3, 0x90, 0x00, 0x30, // csrrw ra, mstatus, ra
@@ -279,7 +451,7 @@ mod tests {
         ];
 
         let mut memory = SliceMemory::new(code, &mut []);
-        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
+        let mut engine = Engine::new(&mut memory, Config::default()).unwrap();
 
         // Run the engine
         let result = engine.run();
@@ -289,10 +461,19 @@ mod tests {
             55
         );
 
-        // Callback
-        let result = engine.callback();
+        // interrupt
+        let result = engine.interrupt();
         assert_eq!(result, Ok(()));
         assert_eq!(engine.program_counter, 40);
+        assert!(
+            engine
+                .registers
+                .control_status
+                .operation(None, 0x344) // MIP
+                .unwrap()
+                & (1 << EMBIVE_INTERRUPT_CODE)
+                != 0
+        );
 
         // Run the engine again
         let result = engine.run();
@@ -308,12 +489,12 @@ mod tests {
     }
 
     #[test]
-    fn test_callback_disabled() {
+    fn test_interrupt_disabled() {
         let mut memory = SliceMemory::new(&[], &mut []);
         let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
 
-        // Callback
-        let result = engine.callback();
-        assert_eq!(result, Err(Error::CallbackNotEnabled));
+        // interrupt
+        let result = engine.interrupt();
+        assert_eq!(result, Err(Error::InterruptNotEnabled));
     }
 }

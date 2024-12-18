@@ -34,7 +34,7 @@ impl<M: Memory> Instruction<M> for System {
             match inst.imm {
                 ECALL_IMM => engine.syscall().map(|_| EngineState::Running), // Execute the syscall function (ecall)
                 EBREAK_IMM => Ok(EngineState::Halted), // Halt the execution (ebreak)
-                WFI_IMM => Ok(EngineState::Waiting),   // Wait for interrupt/callback/event (wfi)
+                WFI_IMM => Ok(EngineState::Waiting),   // Wait for interrupt (wfi)
                 MRET_IMM => {
                     // Return from machine-mode trap
                     engine.program_counter = engine.registers.control_status.trap_return();
@@ -226,6 +226,44 @@ mod tests {
             Ok(-1)
         );
         assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
+    }
+
+    #[test]
+    fn test_wfi() {
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
+        let misc_mem = TypeI {
+            rd: 0,
+            rs1: 0,
+            imm: WFI_IMM,
+            funct3: EBREAK_ECALL_WFI_MRET_FUNCT3,
+        };
+
+        let result = System::decode_execute(misc_mem.into(), &mut engine);
+        assert_eq!(result, Ok(EngineState::Waiting));
+        assert_eq!(engine.program_counter, INSTRUCTION_SIZE);
+    }
+
+    #[test]
+    fn test_mret() {
+        let mut memory = SliceMemory::new(&[], &mut []);
+        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
+        engine
+            .registers
+            .control_status
+            .operation(Some(CSOperation::Write(0x1234)), 0x341)
+            .unwrap(); //mepc
+
+        let misc_mem = TypeI {
+            rd: 0,
+            rs1: 0,
+            imm: MRET_IMM,
+            funct3: EBREAK_ECALL_WFI_MRET_FUNCT3,
+        };
+
+        let result = System::decode_execute(misc_mem.into(), &mut engine);
+        assert_eq!(result, Ok(EngineState::Running));
+        assert_eq!(engine.program_counter, 0x1234);
     }
 
     #[test]

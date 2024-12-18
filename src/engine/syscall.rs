@@ -1,4 +1,5 @@
 //! Embive Engine System Call
+use core::num::NonZeroI32;
 
 /// Number of syscall arguments
 pub const SYSCALL_ARGS: usize = 7;
@@ -18,5 +19,6 @@ pub const SYSCALL_ARGS: usize = 7;
 /// - `memory`: System Memory (code + RAM).
 ///
 /// Returns:
-/// - `Result<i32, i32>`: value (`a1`), error (`a0`).
-pub type SyscallFn<M> = fn(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut M) -> Result<i32, i32>;
+/// - `Result<i32, NonZeroI32>`: value (`a1`), error (`a0`).
+pub type SyscallFn<M> =
+    fn(nr: i32, args: &[i32; SYSCALL_ARGS], memory: &mut M) -> Result<i32, NonZeroI32>;
