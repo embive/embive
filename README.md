@@ -66,8 +66,8 @@ fn main() -> Result<(), Error> {
         0x73, 0x00, 0x10, 0x00, // ebreak          (Halt)
     ];
 
-    // 1KB of RAM
-    let mut ram = [0; 1024];
+    // 4KB of RAM
+    let mut ram = [0; 4096];
 
     // Create memory from code and RAM slices
     let mut memory = SliceMemory::new(code, &mut ram);
