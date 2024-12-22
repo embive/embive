@@ -22,8 +22,9 @@ binary file (`.bin`) statically linked to the correct addresses (Code at `0x0000
 
 ## Templates
 The following templates are available for programs that run inside Embive:
-- [Rust template](https://github.com/embive/embive-rust-template)
 - [C/C++ Template](https://github.com/embive/embive-c-template)
+- [Nim Template](https://github.com/embive/embive-nim-template)
+- [Rust Template](https://github.com/embive/embive-rust-template)
 
 ## Example
 ```rust
