@@ -13,11 +13,12 @@ rust-version = "1.81"
 readme = "README.md"
 
 [dependencies]
+elf = { version = "0.7.4", optional = true, default-features = false }
 
 [features]
-default = []
-m_extension = []
-a_extension = []
+default = ["transpiler", "interpreter"]
+transpiler = ["dep:elf"]
+interpreter = []
 
 [package.metadata.docs.rs]
 all-features = true

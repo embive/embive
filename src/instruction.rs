@@ -1,111 +1,149 @@
-//! RISC-V instruction set implementation.
-#[cfg(feature = "a_extension")]
-mod amo;
-mod auipc;
-mod branch;
-mod format;
-mod jal;
-mod jalr;
-mod load;
-mod lui;
-mod misc_mem;
-mod op;
-mod op_imm;
-mod store;
-mod system;
+//! Instruction module.
+#[cfg(any(feature = "transpiler", feature = "interpreter"))]
+mod embive_macro;
+#[cfg(feature = "transpiler")]
+mod riscv_macro;
 
-use crate::engine::{Engine, EngineState};
-use crate::error::Error;
-use crate::memory::Memory;
-
-#[cfg(feature = "a_extension")]
-use amo::Amo;
-use auipc::Auipc;
-use branch::Branch;
-use jal::Jal;
-use jalr::Jalr;
-use load::Load;
-use lui::Lui;
-use misc_mem::MiscMem;
-use op::Op;
-use op_imm::OpImm;
-use store::Store;
-use system::System;
-
-/// The size of an instruction in bytes.
-const INSTRUCTION_SIZE: u32 = 4;
-
-// RISC-V opcodes.
-#[cfg(feature = "a_extension")]
-const AMO_OPCODE: u8 = 0b010_1111;
-const LUI_OPCODE: u8 = 0b011_0111;
-const AUI_PC_OPCODE: u8 = 0b001_0111;
-const JAL_OPCODE: u8 = 0b110_1111;
-const JALR_OPCODE: u8 = 0b110_0111;
-const BRANCH_OPCODE: u8 = 0b110_0011;
-const LOAD_OPCODE: u8 = 0b000_0011;
-const STORE_OPCODE: u8 = 0b010_0011;
-const OP_IMM_OPCODE: u8 = 0b001_0011;
-const OP_OPCODE: u8 = 0b011_0011;
-const MISC_MEM_OPCODE: u8 = 0b000_1111;
-const SYSTEM_OPCODE: u8 = 0b111_0011;
-
-/// Instruction trait. All instructions must implement this trait.
-trait Instruction<M: Memory> {
-    /// Decode and Execute the instruction.
-    ///
-    /// Arguments:
-    /// - `data`: `u32` value representing the instruction.
-    /// - `engine`: Mutable pointer to embive engine.
-    ///
-    /// Returns:
-    /// - `Ok(EngineState)`: Instruction executed successfully.
-    /// - `Err(Error)`: Failed to execute instruction.
-    fn decode_execute(data: u32, engine: &mut Engine<'_, M>) -> Result<EngineState, Error>;
+/// Instruction Size
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
+pub enum Size {
+    Half = 2,
+    Word = 4,
 }
 
-/// Decode and execute an instruction.
-///
-/// Arguments:
-/// - `engine`: Mutable pointer to embive engine.
-/// - `data`: `u32` value representing the instruction.
-///
-/// Returns:
-/// - `Ok(EngineState)`: The instruction was decoded and executed successfully.
-/// - `Err(Error)`: Failed to decode or execute instruction.
-#[inline]
-pub(crate) fn decode_execute<M: Memory>(
-    engine: &mut Engine<'_, M>,
-    data: u32,
-) -> Result<EngineState, Error> {
-    match (data & 0x7F) as u8 {
-        LOAD_OPCODE => Load::decode_execute(data, engine),
-        MISC_MEM_OPCODE => MiscMem::decode_execute(data, engine),
-        OP_IMM_OPCODE => OpImm::decode_execute(data, engine),
-        AUI_PC_OPCODE => Auipc::decode_execute(data, engine),
-        STORE_OPCODE => Store::decode_execute(data, engine),
-        #[cfg(feature = "a_extension")]
-        AMO_OPCODE => Amo::decode_execute(data, engine),
-        OP_OPCODE => Op::decode_execute(data, engine),
-        LUI_OPCODE => Lui::decode_execute(data, engine),
-        BRANCH_OPCODE => Branch::decode_execute(data, engine),
-        JALR_OPCODE => Jalr::decode_execute(data, engine),
-        JAL_OPCODE => Jal::decode_execute(data, engine),
-        SYSTEM_OPCODE => System::decode_execute(data, engine),
-        _ => Err(Error::InvalidInstruction),
-    }
+/// Embive Instruction
+#[cfg(any(feature = "transpiler", feature = "interpreter"))]
+pub mod embive {
+    use super::{embive_macro::instruction, Size};
+    use crate::format::{
+        Format, TypeB, TypeCB1, TypeCB2, TypeCB4, TypeCI1, TypeCI2, TypeCI3, TypeCI4, TypeCI5,
+        TypeCIW, TypeCJ, TypeCL, TypeCR, TypeCS, TypeCSS, TypeI, TypeJ, TypeR, TypeU,
+    };
+
+    // Name, Opcode, Size, Format, Custom (code/data)
+    instruction!(CAddi4spn, 0, Size::Half, TypeCIW, {});
+    instruction!(CLw, 1, Size::Half, TypeCL, {});
+    instruction!(CSw, 2, Size::Half, TypeCL, {});
+    instruction!(CAddi, 3, Size::Half, TypeCI1, {});
+    instruction!(CJal, 4, Size::Half, TypeCJ, {});
+    instruction!(CLi, 5, Size::Half, TypeCI1, {});
+    instruction!(CAddi16sp, 6, Size::Half, TypeCI2, {});
+    instruction!(CLui, 7, Size::Half, TypeCI3, {});
+    instruction!(CSrli, 8, Size::Half, TypeCB1, {});
+    instruction!(CSrai, 9, Size::Half, TypeCB1, {});
+    instruction!(CAndi, 10, Size::Half, TypeCB2, {});
+    instruction!(CSub, 11, Size::Half, TypeCS, {});
+    instruction!(CXor, 12, Size::Half, TypeCS, {});
+    instruction!(COr, 13, Size::Half, TypeCS, {});
+    instruction!(CAnd, 14, Size::Half, TypeCS, {});
+    instruction!(CJ, 15, Size::Half, TypeCJ, {});
+    instruction!(CBeqz, 16, Size::Half, TypeCB4, {});
+    instruction!(CBnez, 17, Size::Half, TypeCB4, {});
+    instruction!(CSlli, 18, Size::Half, TypeCI4, {});
+    instruction!(CLwsp, 19, Size::Half, TypeCI5, {});
+    instruction!(CJrMv, 20, Size::Half, TypeCR, {});
+    instruction!(CEbreakJalrAdd, 21, Size::Half, TypeCR, {});
+    instruction!(CSwsp, 22, Size::Half, TypeCSS, {});
+    instruction!(Auipc, 23, Size::Word, TypeU, {});
+    instruction!(Branch, 24, Size::Word, TypeB, {
+        pub const BEQ_FUNCT3: u8 = 0;
+        pub const BNE_FUNCT3: u8 = 1;
+        pub const BLT_FUNCT3: u8 = 2;
+        pub const BGE_FUNCT3: u8 = 3;
+        pub const BLTU_FUNCT3: u8 = 4;
+        pub const BGEU_FUNCT3: u8 = 5;
+    });
+    instruction!(Jal, 25, Size::Word, TypeJ, {});
+    instruction!(Jalr, 26, Size::Word, TypeI, {});
+    instruction!(LoadStore, 27, Size::Word, TypeI, {
+        pub const LB_FUNCT3: u8 = 0;
+        pub const LH_FUNCT3: u8 = 1;
+        pub const LW_FUNCT3: u8 = 2;
+        pub const LBU_FUNCT3: u8 = 3;
+        pub const LHU_FUNCT3: u8 = 4;
+        pub const SB_FUNCT3: u8 = 5;
+        pub const SH_FUNCT3: u8 = 6;
+        pub const SW_FUNCT3: u8 = 7;
+    });
+    instruction!(Lui, 28, Size::Word, TypeU, {});
+    instruction!(OpImm, 29, Size::Word, TypeI, {
+        pub const ADDI_FUNC3: u8 = 0;
+        pub const SLLI_FUNC3: u8 = 1;
+        pub const SLTI_FUNC3: u8 = 2;
+        pub const SLTIU_FUNC3: u8 = 3;
+        pub const XORI_FUNC3: u8 = 4;
+        pub const SRLI_SRAI_FUNC3: u8 = 5;
+        pub const ORI_FUNC3: u8 = 6;
+        pub const ANDI_FUNC3: u8 = 7;
+    });
+    instruction!(OpAmo, 30, Size::Word, TypeR, {
+        pub const ADD_FUNCT10: u16 = 0;
+        pub const SUB_FUNCT10: u16 = 1;
+        pub const SLL_FUNCT10: u16 = 2;
+        pub const SLT_FUNCT10: u16 = 3;
+        pub const SLTU_FUNCT10: u16 = 4;
+        pub const XOR_FUNCT10: u16 = 5;
+        pub const SRL_FUNCT10: u16 = 6;
+        pub const SRA_FUNCT10: u16 = 7;
+        pub const OR_FUNCT10: u16 = 8;
+        pub const AND_FUNCT10: u16 = 9;
+        pub const MUL_FUNCT10: u16 = 10;
+        pub const MULH_FUNCT10: u16 = 11;
+        pub const MULHSU_FUNCT10: u16 = 12;
+        pub const MULHU_FUNCT10: u16 = 13;
+        pub const DIV_FUNCT10: u16 = 14;
+        pub const DIVU_FUNCT10: u16 = 15;
+        pub const REM_FUNCT10: u16 = 16;
+        pub const REMU_FUNCT10: u16 = 17;
+        pub const LR_FUNCT10: u16 = 18;
+        pub const SC_FUNCT10: u16 = 19;
+        pub const AMOSWAP_FUNCT10: u16 = 20;
+        pub const AMOADD_FUNCT10: u16 = 21;
+        pub const AMOXOR_FUNCT10: u16 = 22;
+        pub const AMOAND_FUNCT10: u16 = 23;
+        pub const AMOOR_FUNCT10: u16 = 24;
+        pub const AMOMIN_FUNCT10: u16 = 25;
+        pub const AMOMAX_FUNCT10: u16 = 26;
+        pub const AMOMINU_FUNCT10: u16 = 27;
+        pub const AMOMAXU_FUNCT10: u16 = 28;
+    });
+    instruction!(SystemMiscMem, 31, Size::Word, TypeI, {
+        pub const ECALL_IMM: i32 = 0;
+        pub const EBREAK_IMM: i32 = 1;
+        pub const FENCEI_IMM: i32 = 2;
+        pub const WFI_IMM: i32 = 3;
+        pub const MRET_IMM: i32 = 4;
+        pub const EBREAK_ECALL_FENCEI_WFI_MRET_FUNCT3: u8 = 0;
+        pub const CSRRW_FUNCT3: u8 = 1;
+        pub const CSRRS_FUNCT3: u8 = 2;
+        pub const CSRRC_FUNCT3: u8 = 3;
+        pub const CSRRWI_FUNCT3: u8 = 4;
+        pub const CSRRSI_FUNCT3: u8 = 5;
+        pub const CSRRCI_FUNCT3: u8 = 6;
+    });
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{engine::Engine, memory::SliceMemory};
+/// RISC-V Instruction
+#[cfg(feature = "transpiler")]
+pub mod riscv {
+    use super::riscv_macro::instruction;
 
-    #[test]
-    fn test_invalid_instruction() {
-        let mut memory = SliceMemory::new(&[], &mut []);
-        let mut engine = Engine::new(&mut memory, Default::default()).unwrap();
-        let result = super::decode_execute(&mut engine, 0);
-        assert_eq!(result, Err(Error::InvalidInstruction));
-    }
+    // Name, Opcode
+    instruction!(C0, 0b00);
+    instruction!(C1, 0b01);
+    instruction!(C2, 0b10);
+    instruction!(Auipc, 0b001_0111);
+    instruction!(Amo, 0b010_1111);
+    instruction!(Branch, 0b110_0011);
+    instruction!(Jal, 0b110_1111);
+    instruction!(Jalr, 0b110_0111);
+    instruction!(Load, 0b000_0011);
+    instruction!(Lui, 0b011_0111);
+    instruction!(MiscMem, 0b000_1111);
+    instruction!(OpImm, 0b001_0011);
+    instruction!(Op, 0b011_0011);
+    instruction!(Store, 0b010_0011);
+    instruction!(System, 0b111_0011);
 }

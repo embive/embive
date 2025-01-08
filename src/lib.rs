@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![doc = include_str!("../README.md")]
+#![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md"))]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/embive/embive/6da108bce7d0d01ac15ccb78786b68310c83289e/assets/embive_logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/embive/embive/6da108bce7d0d01ac15ccb78786b68310c83289e/assets/embive_logo.svg"
@@ -8,16 +8,14 @@
 #![warn(missing_docs, rust_2018_idioms, future_incompatible, keyword_idents)]
 #![deny(unsafe_code)]
 
-pub mod engine;
-mod error;
+mod format;
 mod instruction;
-pub mod memory;
-pub mod registers;
+#[cfg(feature = "interpreter")]
+pub mod interpreter;
+#[cfg(feature = "transpiler")]
+pub mod transpiler;
 
-#[doc(inline)]
-pub use error::Error;
-
-#[cfg(test)]
+#[cfg(all(test, feature = "interpreter", feature = "transpiler"))]
 mod tests {
     use core::num::NonZeroI32;
     use std::{
@@ -26,19 +24,21 @@ mod tests {
     };
 
     use crate::{
-        engine::{Config, Engine, SYSCALL_ARGS},
-        memory::{SliceMemory, RAM_OFFSET},
+        interpreter::{
+            memory::{SliceMemory, RAM_OFFSET},
+            Config, Interpreter, State, SYSCALL_ARGS,
+        },
+        transpiler::transpile_elf,
     };
 
-    const RAM_SIZE: usize = 16 * 1024;
-    const RV32UI_TESTS: usize = 40;
-    #[cfg(feature = "m_extension")]
+    const RAM_SIZE: usize = 32 * 1024;
+    const RV32UI_TESTS: usize = 39;
     const RV32UM_TESTS: usize = 8;
-    #[cfg(feature = "a_extension")]
     const RV32UA_TESTS: usize = 10;
+    const RV32UC_TESTS: usize = 1;
 
     thread_local! {
-        static SYSCALL_COUNTER: std::cell::RefCell<i32> = std::cell::RefCell::new(0);
+        static SYSCALL_COUNTER: std::cell::RefCell<i32> = const { std::cell::RefCell::new(0) };
     }
 
     fn syscall(
@@ -67,29 +67,37 @@ mod tests {
 
         // Load binary into RAM
         let mut ram = [0; RAM_SIZE];
-        let test_bytes = std::fs::read(test.path()).expect("Failed to read test file");
-        ram[..test_bytes.len()].copy_from_slice(&test_bytes);
+        let test_elf = std::fs::read(test.path()).expect("Failed to read test file");
+        transpile_elf(&test_elf, &mut ram).expect("Failed to transpile");
 
         let mut memory = SliceMemory::new(code, &mut ram);
 
-        // Create engine
-        let mut engine = Engine::new(
+        // Create interpreter
+        let mut interpreter = Interpreter::new(
             &mut memory,
             Config {
-                syscall_fn: Some(syscall),
                 ..Default::default()
             },
         )
         .unwrap();
 
         // Set program counter to RAM (code start)
-        engine.program_counter = RAM_OFFSET;
+        interpreter.program_counter = RAM_OFFSET;
 
         // Get syscall counter prior to running
         let prev_syscall_counter = SYSCALL_COUNTER.with(|c| *c.borrow());
 
         // Run it
-        engine.run().unwrap();
+        loop {
+            match interpreter.run().unwrap() {
+                State::Running => {}
+                State::Called => {
+                    interpreter.syscall(syscall);
+                }
+                State::Waiting => {}
+                State::Halted => break,
+            }
+        }
 
         // Get syscall counter after running
         let new_syscall_counter = SYSCALL_COUNTER.with(|c| *c.borrow());
@@ -104,7 +112,7 @@ mod tests {
     fn rv32ui_bin_tests() {
         // Get all tests
         let mut dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        dir.push("tests");
+        dir.push("tests/riscv");
         dir.push("rv32ui");
 
         let tests = read_dir(dir).expect("Failed to read directory");
@@ -119,12 +127,11 @@ mod tests {
         assert_eq!(tested_files, RV32UI_TESTS);
     }
 
-    #[cfg(feature = "m_extension")]
     #[test]
     fn rv32um_bin_tests() {
         // Get all tests
         let mut dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        dir.push("tests");
+        dir.push("tests/riscv");
         dir.push("rv32um");
 
         let tests = read_dir(dir).expect("Failed to read directory");
@@ -139,17 +146,16 @@ mod tests {
         assert_eq!(tested_files, RV32UM_TESTS);
     }
 
-    #[cfg(feature = "a_extension")]
     #[test]
     fn rv32ua_bin_tests() {
         // Get all tests
         let mut dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        dir.push("tests");
+        dir.push("tests/riscv");
         dir.push("rv32ua");
 
         let tests = read_dir(dir).expect("Failed to read directory");
 
-        // Iterate over RV32UM tests
+        // Iterate over RV32UA tests
         let mut tested_files = 0;
         for test in tests {
             let test = test.expect("Failed to get test");
@@ -157,5 +163,24 @@ mod tests {
             tested_files += 1;
         }
         assert_eq!(tested_files, RV32UA_TESTS);
+    }
+
+    #[test]
+    fn rv32uc_bin_tests() {
+        // Get all tests
+        let mut dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        dir.push("tests/riscv");
+        dir.push("rv32uc");
+
+        let tests = read_dir(dir).expect("Failed to read directory");
+
+        // Iterate over RV32UC tests
+        let mut tested_files = 0;
+        for test in tests {
+            let test = test.expect("Failed to get test");
+            execute_bin_test(test);
+            tested_files += 1;
+        }
+        assert_eq!(tested_files, RV32UC_TESTS);
     }
 }
