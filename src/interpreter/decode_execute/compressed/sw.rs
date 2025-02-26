@@ -12,7 +12,7 @@ impl<M: Memory> DecodeExecute<M> for CSw {
         let rs1 = interpreter.registers.cpu.get(inst.rs1)?;
         let address = (rs1 as u32).wrapping_add(inst.imm as u32);
 
-        let rs2: &mut i32 = interpreter.registers.cpu.get_mut(inst.rd_rs2)?;
+        let rs2 = interpreter.registers.cpu.get(inst.rd_rs2)?;
         interpreter.memory.store(address, &rs2.to_le_bytes())?;
 
         // Go to next instruction
