@@ -7,7 +7,7 @@ use super::{embive_raw, Convert, RawInstruction};
 impl Convert for riscv::MiscMem {
     fn convert(data: u32) -> Result<RawInstruction, Error> {
         let mut inst = TypeI::from_riscv(data);
-        inst.funct3 = embive::SystemMiscMem::EBREAK_ECALL_FENCEI_WFI_MRET_FUNCT3;
+        inst.func = embive::SystemMiscMem::MISC_FUNC;
         inst.imm = embive::SystemMiscMem::FENCEI_IMM;
 
         Ok(embive_raw!(embive::SystemMiscMem, inst))

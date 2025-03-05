@@ -19,6 +19,8 @@ pub use error::Error;
 #[doc(inline)]
 pub use state::State;
 
+use crate::instruction::embive::Instruction;
+
 /// Embive Custom Interrupt Code
 pub const EMBIVE_INTERRUPT_CODE: u32 = 16;
 
@@ -111,7 +113,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     #[inline(always)]
     pub fn step(&mut self) -> Result<State, Error> {
         // Fetch next instruction
-        let data = self.fetch()?;
+        let data = u32::from(self.fetch()?);
 
         // Decode and execute the instruction
         let ret = decode_execute(self, data)?;
@@ -119,16 +121,16 @@ impl<'a, M: Memory> Interpreter<'a, M> {
         Ok(ret)
     }
 
-    /// Fetch the next instruction (raw) from the program counter.
+    /// Fetch the next instruction from the program counter.
     ///
     /// Returns:
-    /// - `Ok(u32)`: The instruction (raw) that was fetched.
+    /// - `Ok(Instruction)`: The instruction that was fetched.
     /// - `Err(Error)`: The program counter is out of bounds.
     #[inline(always)]
-    pub fn fetch(&mut self) -> Result<u32, Error> {
+    pub fn fetch(&mut self) -> Result<Instruction, Error> {
         let data = self.memory.load(self.program_counter, 4)?;
         // Unwrap is safe because the slice is guaranteed to have 4 elements.
-        Ok(u32::from_le_bytes(data.try_into().unwrap()))
+        Ok(u32::from_le_bytes(data.try_into().unwrap()).into())
     }
 
     /// Execute an interrupt as configured by the interpreted code.

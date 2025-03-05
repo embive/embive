@@ -9,7 +9,7 @@
 #![deny(unsafe_code)]
 
 mod format;
-mod instruction;
+pub mod instruction;
 #[cfg(feature = "interpreter")]
 pub mod interpreter;
 #[cfg(feature = "transpiler")]

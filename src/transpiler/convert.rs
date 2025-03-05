@@ -16,7 +16,8 @@ mod store;
 mod system;
 
 use super::Error;
-use crate::instruction::{riscv, Size};
+use crate::format::Size;
+use crate::instruction::riscv;
 
 /// Compressed Instruction Funct3
 #[inline(always)]
@@ -81,12 +82,11 @@ trait Convert {
 /// - `inst`: The instruction type to convert to.
 /// - `data`: The decoded instruction.
 macro_rules! embive_raw {
-    ($inst:ty, $data:expr) => {
-        RawInstruction::new(
-            <$inst>::encode($data) | <$inst>::OPCODE as u32,
-            <$inst>::SIZE,
-        )
-    };
+    ($inst:ty, $data:expr) => {{
+        use crate::instruction::embive::InstructionImpl;
+        let inst = <$inst>::from($data);
+        RawInstruction::new(inst.encode() | <$inst>::opcode() as u32, <$inst>::size())
+    }};
 }
 use embive_raw;
 

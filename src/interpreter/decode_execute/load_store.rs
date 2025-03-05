@@ -1,85 +1,86 @@
+use crate::instruction::embive::InstructionImpl;
 use crate::instruction::embive::LoadStore;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
-use super::DecodeExecute;
+use super::Execute;
 
-impl<M: Memory> DecodeExecute<M> for LoadStore {
+impl<M: Memory> Execute<M> for LoadStore {
     #[inline(always)]
-    fn decode_execute(data: u32, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
-        let inst = Self::decode(data);
+    fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
+        let rs1 = interpreter.registers.cpu.get(self.0.rs1)?;
 
-        let rs1 = interpreter.registers.cpu.get(inst.rs1)?;
-
-        let address = (rs1 as u32).wrapping_add_signed(inst.imm);
-        match inst.funct3 {
-            Self::LB_FUNCT3 => {
+        let address = (rs1 as u32).wrapping_add_signed(self.0.imm);
+        match self.0.func {
+            Self::LB_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 1 element.
                 let result =
                     i8::from_le_bytes(interpreter.memory.load(address, 1)?.try_into().unwrap())
                         as i32;
                 // Store the result in the destination register
-                let rd = interpreter.registers.cpu.get_mut(inst.rd_rs2)?;
+                let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
-            Self::LH_FUNCT3 => {
+            Self::LH_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 2 elements
                 let result =
                     i16::from_le_bytes(interpreter.memory.load(address, 2)?.try_into().unwrap())
                         as i32;
                 // Store the result in the destination register
-                let rd = interpreter.registers.cpu.get_mut(inst.rd_rs2)?;
+                let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
-            Self::LW_FUNCT3 => {
+            Self::LW_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 4 elements
                 let result =
                     i32::from_le_bytes(interpreter.memory.load(address, 4)?.try_into().unwrap());
                 // Store the result in the destination register
-                let rd = interpreter.registers.cpu.get_mut(inst.rd_rs2)?;
+                let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
-            Self::LBU_FUNCT3 => {
+            Self::LBU_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 1 element.
                 let result =
                     u8::from_le_bytes(interpreter.memory.load(address, 1)?.try_into().unwrap())
                         as i32;
                 // Store the result in the destination register
-                let rd = interpreter.registers.cpu.get_mut(inst.rd_rs2)?;
+                let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
-            Self::LHU_FUNCT3 => {
+            Self::LHU_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 2 elements
                 let result =
                     u16::from_le_bytes(interpreter.memory.load(address, 2)?.try_into().unwrap())
                         as i32;
                 // Store the result in the destination register
-                let rd = interpreter.registers.cpu.get_mut(inst.rd_rs2)?;
+                let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
-            Self::SB_FUNCT3 => {
-                let address = (rs1 as u32).wrapping_add_signed(inst.imm);
-                let rs2 = interpreter.registers.cpu.get(inst.rd_rs2)?;
+            Self::SB_FUNC => {
+                let address = (rs1 as u32).wrapping_add_signed(self.0.imm);
+                let rs2 = interpreter.registers.cpu.get(self.0.rd_rs2)?;
                 interpreter
                     .memory
                     .store(address, &(rs2 as u8).to_le_bytes())?;
             }
-            Self::SH_FUNCT3 => {
-                let address = (rs1 as u32).wrapping_add_signed(inst.imm);
-                let rs2 = interpreter.registers.cpu.get(inst.rd_rs2)?;
+            Self::SH_FUNC => {
+                let address = (rs1 as u32).wrapping_add_signed(self.0.imm);
+                let rs2 = interpreter.registers.cpu.get(self.0.rd_rs2)?;
                 interpreter
                     .memory
                     .store(address, &(rs2 as u16).to_le_bytes())?;
             }
-            Self::SW_FUNCT3 => {
-                let address = (rs1 as u32).wrapping_add_signed(inst.imm);
-                let rs2 = interpreter.registers.cpu.get(inst.rd_rs2)?;
+            Self::SW_FUNC => {
+                let address = (rs1 as u32).wrapping_add_signed(self.0.imm);
+                let rs2 = interpreter.registers.cpu.get(self.0.rd_rs2)?;
                 interpreter.memory.store(address, &rs2.to_le_bytes())?;
             }
-            _ => return Err(Error::InvalidInstruction(data)),
+            _ => return Err(Error::InvalidInstruction(interpreter.program_counter)),
         };
 
         // Go to next instruction
-        interpreter.program_counter = interpreter.program_counter.wrapping_add(Self::SIZE as u32);
+        interpreter.program_counter = interpreter
+            .program_counter
+            .wrapping_add(Self::size() as u32);
 
         Ok(State::Running)
     }
@@ -90,6 +91,7 @@ mod tests {
     use super::*;
     use crate::{
         format::{Format, TypeI},
+        instruction::embive::InstructionImpl,
         interpreter::memory::{SliceMemory, RAM_OFFSET},
     };
 
@@ -108,14 +110,14 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x1,
-            funct3: LoadStore::LB_FUNCT3,
+            func: LoadStore::LB_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lb.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lb.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), 0x12);
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -129,14 +131,14 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x1,
-            funct3: LoadStore::LB_FUNCT3,
+            func: LoadStore::LB_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lb.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lb.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), -0x12);
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -151,14 +153,14 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x1,
-            funct3: LoadStore::LH_FUNCT3,
+            func: LoadStore::LH_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lh.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lh.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), 0x3412);
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -171,14 +173,14 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x0,
-            funct3: LoadStore::LH_FUNCT3,
+            func: LoadStore::LH_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lh.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lh.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), -28098);
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -195,14 +197,14 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x1,
-            funct3: LoadStore::LW_FUNCT3,
+            func: LoadStore::LW_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lw.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lw.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), 0x78563412);
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -215,14 +217,14 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x0,
-            funct3: LoadStore::LW_FUNCT3,
+            func: LoadStore::LW_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lw.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lw.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), -19088744);
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -236,14 +238,14 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x1,
-            funct3: LoadStore::LBU_FUNCT3,
+            func: LoadStore::LBU_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lbu.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lbu.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), 0x12);
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -257,17 +259,17 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x1,
-            funct3: LoadStore::LBU_FUNCT3,
+            func: LoadStore::LBU_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lbu.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lbu.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(
             *interpreter.registers.cpu.get_mut(1).unwrap(),
             (-0x12i8 as u8) as i32
         );
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -282,14 +284,14 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x1,
-            funct3: LoadStore::LHU_FUNCT3,
+            func: LoadStore::LHU_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lhu.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lhu.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), 0x3412);
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -302,17 +304,17 @@ mod tests {
             rd_rs2: 1,
             rs1: 2,
             imm: 0x0,
-            funct3: LoadStore::LHU_FUNCT3,
+            func: LoadStore::LHU_FUNC,
         };
         *interpreter.registers.cpu.get_mut(2).unwrap() = get_ram_addr();
 
-        let result = LoadStore::decode_execute(lhu.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(lhu.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(
             *interpreter.registers.cpu.get_mut(1).unwrap(),
             (-28098i16 as u16) as i32
         );
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
     }
 
     #[test]
@@ -322,7 +324,7 @@ mod tests {
         let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
         let store = TypeI {
             imm: 0x1,
-            funct3: LoadStore::SB_FUNCT3,
+            func: LoadStore::SB_FUNC,
             rs1: 1,
             rd_rs2: 2,
         };
@@ -330,9 +332,9 @@ mod tests {
         *interpreter.registers.cpu.get_mut(1).unwrap() = get_ram_addr();
         *interpreter.registers.cpu.get_mut(2).unwrap() = 0x2;
 
-        let result = LoadStore::decode_execute(store.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(store.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
         assert_eq!(ram[1], 0x2);
     }
 
@@ -343,7 +345,7 @@ mod tests {
         let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
         let store = TypeI {
             imm: 0x2,
-            funct3: LoadStore::SH_FUNCT3,
+            func: LoadStore::SH_FUNC,
             rs1: 1,
             rd_rs2: 2,
         };
@@ -351,9 +353,9 @@ mod tests {
         *interpreter.registers.cpu.get_mut(1).unwrap() = get_ram_addr();
         *interpreter.registers.cpu.get_mut(2).unwrap() = i32::from_le(0x1234);
 
-        let result = LoadStore::decode_execute(store.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(store.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
         assert_eq!(ram[2..4], [0x34, 0x12]);
     }
 
@@ -364,7 +366,7 @@ mod tests {
         let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
         let store = TypeI {
             imm: 0x0,
-            funct3: LoadStore::SW_FUNCT3,
+            func: LoadStore::SW_FUNC,
             rs1: 1,
             rd_rs2: 2,
         };
@@ -372,9 +374,9 @@ mod tests {
         *interpreter.registers.cpu.get_mut(1).unwrap() = get_ram_addr();
         *interpreter.registers.cpu.get_mut(2).unwrap() = i32::from_le(0x12345678);
 
-        let result = LoadStore::decode_execute(store.to_embive(), &mut interpreter);
+        let result = LoadStore::decode(store.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
-        assert_eq!(interpreter.program_counter, LoadStore::SIZE as u32);
+        assert_eq!(interpreter.program_counter, LoadStore::size() as u32);
         assert_eq!(ram[0..4], [0x78, 0x56, 0x34, 0x12]);
     }
 }

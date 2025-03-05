@@ -1,20 +1,21 @@
 use crate::instruction::embive::CBnez;
+use crate::instruction::embive::InstructionImpl;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
-use super::super::DecodeExecute;
+use super::super::Execute;
 
-impl<M: Memory> DecodeExecute<M> for CBnez {
+impl<M: Memory> Execute<M> for CBnez {
     #[inline(always)]
-    fn decode_execute(data: u32, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
-        let inst = Self::decode(data);
-
+    fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
         // Branch if rs1 is not zero
-        if interpreter.registers.cpu.get(inst.rs1)? != 0 {
-            interpreter.program_counter = interpreter.program_counter.wrapping_add_signed(inst.imm);
+        if interpreter.registers.cpu.get(self.0.rs1)? != 0 {
+            interpreter.program_counter =
+                interpreter.program_counter.wrapping_add_signed(self.0.imm);
         } else {
             // Go to next instruction
-            interpreter.program_counter =
-                interpreter.program_counter.wrapping_add(Self::SIZE as u32);
+            interpreter.program_counter = interpreter
+                .program_counter
+                .wrapping_add(Self::size() as u32);
         }
 
         Ok(State::Running)
@@ -25,6 +26,7 @@ impl<M: Memory> DecodeExecute<M> for CBnez {
 mod tests {
     use crate::{
         format::{Format, TypeCB4},
+        instruction::embive::InstructionImpl,
         interpreter::memory::SliceMemory,
     };
 
@@ -38,7 +40,7 @@ mod tests {
 
         *interpreter.registers.cpu.get_mut(8).unwrap() = 0x1;
 
-        let result = CBnez::decode_execute(bnez.to_embive(), &mut interpreter);
+        let result = CBnez::decode(bnez.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(interpreter.program_counter, 0x4);
     }
@@ -49,7 +51,7 @@ mod tests {
         let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
         let bnez = TypeCB4 { imm: 0x4, rs1: 8 };
 
-        let result = CBnez::decode_execute(bnez.to_embive(), &mut interpreter);
+        let result = CBnez::decode(bnez.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(interpreter.program_counter, 0x2);
     }
