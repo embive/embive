@@ -5,17 +5,17 @@ use core::fmt::{Display, Formatter, Result};
 /// Embive Error
 #[derive(Debug, PartialEq)]
 pub enum Error {
-    /// Memory address is out of bounds.
+    /// Memory address is out of bounds. The memory address is provided.
     InvalidMemoryAddress(u32),
-    /// Program counter is out of bounds.
+    /// Program counter is out of bounds. The program counter is provided.
     InvalidProgramCounter(u32),
-    /// Instruction is invalid. The instruction is provided.
+    /// Instruction is invalid. The program counter is provided.
     InvalidInstruction(u32),
-    /// Control and Status Register is invalid or not supported.
+    /// Control and Status Register is invalid or not supported. The CSR address is provided.
     InvalidCSRegister(u16),
-    /// CPU Register is out of bounds.
+    /// CPU Register is out of bounds. The register index is provided.
     InvalidCPURegister(u8),
-    /// Instruction is illegal. The instruction is provided.
+    /// Instruction is illegal. The program counter is provided.
     IllegalInstruction(u32),
     /// Interrupt not enabled by interpreted code (CSR `mie` bit [`crate::interpreter::EMBIVE_INTERRUPT_CODE`]).
     InterruptNotEnabled,

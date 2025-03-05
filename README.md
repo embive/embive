@@ -97,13 +97,13 @@ fn main() {
         .with_instruction_limit(10);
 
     // Create interpreter
-    let mut interpreter = Interpreter::new(&mut memory, config).unwrap();
+    let mut interpreter = Interpreter::new(&mut memory, config);
 
     // Run it until ebreak, triggering an interrupt after every wfi
     loop {
         match interpreter.run().unwrap() {
             State::Running => {}
-            State::Called => interpreter.syscall(syscall),
+            State::Called => interpreter.syscall(&mut syscall),
             State::Waiting => interpreter.interrupt().unwrap(),
             State::Halted => break,
         }
@@ -148,6 +148,7 @@ You can read more about interrupts in the `interpreter::Engine::interrupt` docum
 |---------------|---------|-------------------------------------|--------------|
 | `transpiler`  | Yes     | ELF-to-bytecode conversion          | [elf](https://docs.rs/elf/latest/elf/)        |
 | `interpreter` | Yes     | Execution engine                    | None         |
+| `debugger`    | Yes     | GDB Debugger                        | [gdbstub](https://github.com/daniel5151/gdbstub) & [gdbstub_arch](https://github.com/daniel5151/gdbstub) |
 
 ## Supported RISC-V Extensions
 

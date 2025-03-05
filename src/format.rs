@@ -1,17 +1,30 @@
 //! RISC-V & Embive Instruction Formats
 use core::fmt;
 
-pub(crate) const COMPRESSED_REGISTER_OFFSET: u8 = 8;
+const COMPRESSED_REGISTER_OFFSET: u8 = 8;
+
+/// Format Size
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Size {
+    /// 16-bit (2 bytes) Format
+    Half = 2,
+    /// 32-bit (4 bytes) Format
+    Word = 4,
+}
 
 /// Instruction Format Trait
+///
 /// Each format can be expressed as a raw RISC-V bytecode, a raw Embive bytecode, and a struct.
 #[allow(dead_code)]
 pub trait Format: fmt::Debug + PartialEq + Copy + Clone {
-    /// Decode the instruction from a raw RISC-V bytecode
+    /// Instruction format size
+    const SIZE: Size;
+    /// Decode the instruction from raw RISC-V bytecode
     fn from_riscv(inst: u32) -> Self;
-    /// Decode the instruction from a raw Embive bytecode
+    /// Decode the instruction from raw Embive bytecode
     fn from_embive(inst: u32) -> Self;
-    /// Encode the instruction into a raw Embive bytecode
+    /// Encode the instruction to raw Embive bytecode
     fn to_embive(self) -> u32;
 }
 
@@ -25,17 +38,19 @@ pub struct TypeR {
     /// Source Register 2
     pub rs2: u8,
     /// Function Type
-    pub funct10: u16,
+    pub func: u16,
 }
 
 impl Format for TypeR {
+    const SIZE: Size = Size::Word;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeR {
             rd: ((inst >> 7) & 0b1_1111) as u8,
             rs1: ((inst >> 15) & 0b1_1111) as u8,
             rs2: ((inst >> 20) & 0b1_1111) as u8,
-            funct10: (((inst >> 22) & (0b111_1111 << 3)) | ((inst >> 12) & 0b111)) as u16,
+            func: (((inst >> 22) & (0b111_1111 << 3)) | ((inst >> 12) & 0b111)) as u16,
         }
     }
 
@@ -45,7 +60,7 @@ impl Format for TypeR {
             rd: ((inst >> 17) & 0b1_1111) as u8,
             rs1: ((inst >> 22) & 0b1_1111) as u8,
             rs2: ((inst >> 27) & 0b1_1111) as u8,
-            funct10: ((inst >> 7) & 0b11_1111_1111) as u16,
+            func: ((inst >> 7) & 0b11_1111_1111) as u16,
         }
     }
 
@@ -54,7 +69,7 @@ impl Format for TypeR {
         ((self.rd as u32) << 17)
             | ((self.rs1 as u32) << 22)
             | ((self.rs2 as u32) << 27)
-            | ((self.funct10 as u32) << 7)
+            | ((self.func as u32) << 7)
     }
 }
 
@@ -68,15 +83,17 @@ pub struct TypeI {
     /// Immediate Value
     pub imm: i32,
     /// Function Type
-    pub funct3: u8,
+    pub func: u8,
 }
 
 impl Format for TypeI {
+    const SIZE: Size = Size::Word;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeI {
             rd_rs2: ((inst >> 7) & 0b1_1111) as u8,
-            funct3: ((inst >> 12) & 0b111) as u8,
+            func: ((inst >> 12) & 0b111) as u8,
             rs1: ((inst >> 15) & 0b1_1111) as u8,
             imm: ((inst & (0b1111_1111_1111 << 20)) as i32 >> 20),
         }
@@ -86,7 +103,7 @@ impl Format for TypeI {
     fn from_embive(inst: u32) -> Self {
         TypeI {
             rd_rs2: ((inst >> 10) & 0b1_1111) as u8,
-            funct3: ((inst >> 7) & 0b111) as u8,
+            func: ((inst >> 7) & 0b111) as u8,
             rs1: ((inst >> 15) & 0b1_1111) as u8,
             imm: ((inst & (0b1111_1111_1111 << 20)) as i32 >> 20),
         }
@@ -95,7 +112,7 @@ impl Format for TypeI {
     #[inline(always)]
     fn to_embive(self) -> u32 {
         ((self.rd_rs2 as u32) << 10)
-            | ((self.funct3 as u32) << 7)
+            | ((self.func as u32) << 7)
             | ((self.rs1 as u32) << 15)
             | ((self.imm as u32 & 0b1111_1111_1111) << 20)
     }
@@ -111,15 +128,17 @@ pub struct TypeS {
     /// Immediate Value
     pub imm: i32,
     /// Function Type
-    pub funct3: u8,
+    pub func: u8,
 }
 
 impl Format for TypeS {
+    const SIZE: Size = Size::Word;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeS {
             imm: ((inst & (0b111_1111 << 25)) | ((inst & (0b1_1111 << 7)) << 13)) as i32 >> 20,
-            funct3: ((inst >> 12) & 0b111) as u8,
+            func: ((inst >> 12) & 0b111) as u8,
             rs1: ((inst >> 15) & 0b1_1111) as u8,
             rs2: ((inst >> 20) & 0b1_1111) as u8,
         }
@@ -129,7 +148,7 @@ impl Format for TypeS {
     fn from_embive(inst: u32) -> Self {
         TypeS {
             imm: (inst & (0b1111_1111_1111 << 20)) as i32 >> 20,
-            funct3: ((inst >> 7) & 0b111) as u8,
+            func: ((inst >> 7) & 0b111) as u8,
             rs2: ((inst >> 10) & 0b1_1111) as u8,
             rs1: ((inst >> 15) & 0b1_1111) as u8,
         }
@@ -138,7 +157,7 @@ impl Format for TypeS {
     #[inline(always)]
     fn to_embive(self) -> u32 {
         ((self.imm as u32) << 20)
-            | ((self.funct3 as u32) << 7)
+            | ((self.func as u32) << 7)
             | ((self.rs2 as u32) << 10)
             | ((self.rs1 as u32) << 15)
     }
@@ -154,10 +173,12 @@ pub struct TypeB {
     /// Immediate Value
     pub imm: i32,
     /// Function Type
-    pub funct3: u8,
+    pub func: u8,
 }
 
 impl Format for TypeB {
+    const SIZE: Size = Size::Word;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeB {
@@ -166,7 +187,7 @@ impl Format for TypeB {
                 | ((inst & (0b11_1111 << 25)) >> 1)
                 | ((inst & (0b1111 << 8)) << 12)) as i32
                 >> 19,
-            funct3: ((inst >> 12) & 0b111) as u8,
+            func: ((inst >> 12) & 0b111) as u8,
             rs1: ((inst >> 15) & 0b1_1111) as u8,
             rs2: ((inst >> 20) & 0b1_1111) as u8,
         }
@@ -176,7 +197,7 @@ impl Format for TypeB {
     fn from_embive(inst: u32) -> Self {
         TypeB {
             imm: (inst & (0b1111_1111_1111 << 20)) as i32 >> 19,
-            funct3: ((inst >> 7) & 0b111) as u8,
+            func: ((inst >> 7) & 0b111) as u8,
             rs1: ((inst >> 10) & 0b1_1111) as u8,
             rs2: ((inst >> 15) & 0b1_1111) as u8,
         }
@@ -185,7 +206,7 @@ impl Format for TypeB {
     #[inline(always)]
     fn to_embive(self) -> u32 {
         ((self.imm as u32) << 19)
-            | ((self.funct3 as u32) << 7)
+            | ((self.func as u32) << 7)
             | ((self.rs1 as u32) << 10)
             | ((self.rs2 as u32) << 15)
     }
@@ -201,6 +222,8 @@ pub struct TypeU {
 }
 
 impl Format for TypeU {
+    const SIZE: Size = Size::Word;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeU {
@@ -230,6 +253,8 @@ pub struct TypeJ {
 }
 
 impl Format for TypeJ {
+    const SIZE: Size = Size::Word;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeJ {
@@ -266,6 +291,8 @@ pub struct TypeCIW {
 }
 
 impl Format for TypeCIW {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCIW {
@@ -304,6 +331,8 @@ pub struct TypeCL {
 }
 
 impl Format for TypeCL {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCL {
@@ -332,7 +361,7 @@ impl Format for TypeCL {
     }
 }
 
-/// CI Format 1 (IMM[5:0])
+/// CI Format 1 (IMM\[5:0\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCI1 {
     /// Destination Register / Source Register 1
@@ -342,6 +371,8 @@ pub struct TypeCI1 {
 }
 
 impl Format for TypeCI1 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCI1 {
@@ -364,7 +395,7 @@ impl Format for TypeCI1 {
     }
 }
 
-/// CI Format 2 (IMM[9:4])
+/// CI Format 2 (IMM\[9:4\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCI2 {
     /// Destination Register / Source Register 1
@@ -374,6 +405,8 @@ pub struct TypeCI2 {
 }
 
 impl Format for TypeCI2 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCI2 {
@@ -401,7 +434,7 @@ impl Format for TypeCI2 {
     }
 }
 
-/// CI Format 3 (IMM[17:12])
+/// CI Format 3 (IMM\[17:12\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCI3 {
     /// Destination Register / Source Register 1
@@ -411,6 +444,8 @@ pub struct TypeCI3 {
 }
 
 impl Format for TypeCI3 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCI3 {
@@ -433,7 +468,7 @@ impl Format for TypeCI3 {
     }
 }
 
-/// CI Format 4 (UIMM[5:0])
+/// CI Format 4 (UIMM\[5:0\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCI4 {
     /// Destination Register / Source Register 1
@@ -443,6 +478,8 @@ pub struct TypeCI4 {
 }
 
 impl Format for TypeCI4 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCI4 {
@@ -465,7 +502,7 @@ impl Format for TypeCI4 {
     }
 }
 
-/// CI Format 5 (UIMM[7:2])
+/// CI Format 5 (UIMM\[7:2\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCI5 {
     /// Destination Register / Source Register 1
@@ -475,6 +512,8 @@ pub struct TypeCI5 {
 }
 
 impl Format for TypeCI5 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCI5 {
@@ -500,7 +539,7 @@ impl Format for TypeCI5 {
     }
 }
 
-/// CB Format 1 (UIMM[5:0])
+/// CB Format 1 (UIMM\[5:0\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCB1 {
     /// Destination / Source Register 1
@@ -510,6 +549,8 @@ pub struct TypeCB1 {
 }
 
 impl Format for TypeCB1 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCB1 {
@@ -532,7 +573,7 @@ impl Format for TypeCB1 {
     }
 }
 
-/// CB Format 2 (IMM[5:0])
+/// CB Format 2 (IMM\[5:0\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCB2 {
     /// Destination / Source Register 1
@@ -542,6 +583,8 @@ pub struct TypeCB2 {
 }
 
 impl Format for TypeCB2 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCB2 {
@@ -574,6 +617,8 @@ pub struct TypeCB3 {
 }
 
 impl Format for TypeCB3 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCB3 {
@@ -596,7 +641,7 @@ impl Format for TypeCB3 {
     }
 }
 
-/// CB Format 4 (IMM[8:1])
+/// CB Format 4 (IMM\[8:1\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCB4 {
     /// Source Register 1
@@ -606,6 +651,8 @@ pub struct TypeCB4 {
 }
 
 impl Format for TypeCB4 {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCB4 {
@@ -644,6 +691,8 @@ pub struct TypeCR {
 }
 
 impl Format for TypeCR {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCR {
@@ -676,6 +725,8 @@ pub struct TypeCS {
 }
 
 impl Format for TypeCS {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCS {
@@ -708,6 +759,8 @@ pub struct TypeCSS {
 }
 
 impl Format for TypeCSS {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCSS {
@@ -738,6 +791,8 @@ pub struct TypeCJ {
 }
 
 impl Format for TypeCJ {
+    const SIZE: Size = Size::Half;
+
     #[inline(always)]
     fn from_riscv(inst: u32) -> Self {
         TypeCJ {
@@ -774,9 +829,9 @@ mod tests {
     where
         T: Format + PartialEq + std::fmt::Debug + Copy,
     {
-        let into: u32 = inst.to_embive();
-        let from: T = T::from_embive(into);
-        assert_eq!(inst, from);
+        let into_embive: u32 = inst.to_embive();
+        let from_embive: T = T::from_embive(into_embive);
+        assert_eq!(inst, from_embive);
     }
 
     #[test]
@@ -788,7 +843,7 @@ mod tests {
         assert_eq!(parsed.rd, 1);
         assert_eq!(parsed.rs1, 4);
         assert_eq!(parsed.rs2, 3);
-        assert_eq!(parsed.funct10, (32 << 3) | 5);
+        assert_eq!(parsed.func, (32 << 3) | 5);
     }
 
     #[test]
@@ -798,7 +853,7 @@ mod tests {
         test_from_to(parsed);
 
         assert_eq!(parsed.rd_rs2, 3);
-        assert_eq!(parsed.funct3, 0);
+        assert_eq!(parsed.func, 0);
         assert_eq!(parsed.rs1, 2);
         assert_eq!({ parsed.imm }, -1000);
     }
@@ -810,7 +865,7 @@ mod tests {
         test_from_to(parsed);
 
         assert_eq!(parsed.rd_rs2, 1);
-        assert_eq!(parsed.funct3, 4);
+        assert_eq!(parsed.func, 4);
         assert_eq!(parsed.rs1, 0);
         assert_eq!({ parsed.imm }, 2042);
     }
@@ -822,7 +877,7 @@ mod tests {
         test_from_to(parsed);
 
         assert_eq!(parsed.imm, -490);
-        assert_eq!(parsed.funct3, 1);
+        assert_eq!(parsed.func, 1);
         assert_eq!(parsed.rs1, 2);
         assert_eq!(parsed.rs2, 1);
     }
@@ -834,7 +889,7 @@ mod tests {
         test_from_to(parsed);
 
         assert_eq!(parsed.imm, 490);
-        assert_eq!(parsed.funct3, 1);
+        assert_eq!(parsed.func, 1);
         assert_eq!(parsed.rs1, 2);
         assert_eq!(parsed.rs2, 1);
     }
@@ -846,7 +901,7 @@ mod tests {
         test_from_to(parsed);
 
         assert_eq!(parsed.imm, -1336);
-        assert_eq!(parsed.funct3, 1);
+        assert_eq!(parsed.func, 1);
         assert_eq!(parsed.rs1, 5);
         assert_eq!(parsed.rs2, 8);
     }
@@ -858,7 +913,7 @@ mod tests {
         test_from_to(parsed);
 
         assert_eq!(parsed.imm, 712);
-        assert_eq!(parsed.funct3, 1);
+        assert_eq!(parsed.func, 1);
         assert_eq!(parsed.rs1, 5);
         assert_eq!(parsed.rs2, 8);
     }

@@ -1,133 +1,189 @@
 //! Instruction module.
+
 #[cfg(any(feature = "transpiler", feature = "interpreter"))]
 mod embive_macro;
 #[cfg(feature = "transpiler")]
 mod riscv_macro;
 
-/// Instruction Size
-#[repr(u32)]
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[allow(dead_code)]
-pub enum Size {
-    Half = 2,
-    Word = 4,
-}
+#[cfg(any(feature = "transpiler", feature = "interpreter"))]
+#[doc(inline)]
+pub use embive::Instruction;
 
 /// Embive Instruction
 #[cfg(any(feature = "transpiler", feature = "interpreter"))]
-pub mod embive {
-    use super::{embive_macro::instruction, Size};
+pub(crate) mod embive {
+    use super::embive_macro::instructions;
     use crate::format::{
-        Format, TypeB, TypeCB1, TypeCB2, TypeCB4, TypeCI1, TypeCI2, TypeCI3, TypeCI4, TypeCI5,
-        TypeCIW, TypeCJ, TypeCL, TypeCR, TypeCS, TypeCSS, TypeI, TypeJ, TypeR, TypeU,
+        Format, Size, TypeB, TypeCB1, TypeCB2, TypeCB4, TypeCI1, TypeCI2, TypeCI3, TypeCI4,
+        TypeCI5, TypeCIW, TypeCJ, TypeCL, TypeCR, TypeCS, TypeCSS, TypeI, TypeJ, TypeR, TypeU,
     };
 
-    // Name, Opcode, Size, Format, Custom (code/data)
-    instruction!(CAddi4spn, 0, Size::Half, TypeCIW, {});
-    instruction!(CLw, 1, Size::Half, TypeCL, {});
-    instruction!(CSw, 2, Size::Half, TypeCL, {});
-    instruction!(CAddi, 3, Size::Half, TypeCI1, {});
-    instruction!(CJal, 4, Size::Half, TypeCJ, {});
-    instruction!(CLi, 5, Size::Half, TypeCI1, {});
-    instruction!(CAddi16sp, 6, Size::Half, TypeCI2, {});
-    instruction!(CLui, 7, Size::Half, TypeCI3, {});
-    instruction!(CSrli, 8, Size::Half, TypeCB1, {});
-    instruction!(CSrai, 9, Size::Half, TypeCB1, {});
-    instruction!(CAndi, 10, Size::Half, TypeCB2, {});
-    instruction!(CSub, 11, Size::Half, TypeCS, {});
-    instruction!(CXor, 12, Size::Half, TypeCS, {});
-    instruction!(COr, 13, Size::Half, TypeCS, {});
-    instruction!(CAnd, 14, Size::Half, TypeCS, {});
-    instruction!(CJ, 15, Size::Half, TypeCJ, {});
-    instruction!(CBeqz, 16, Size::Half, TypeCB4, {});
-    instruction!(CBnez, 17, Size::Half, TypeCB4, {});
-    instruction!(CSlli, 18, Size::Half, TypeCI4, {});
-    instruction!(CLwsp, 19, Size::Half, TypeCI5, {});
-    instruction!(CJrMv, 20, Size::Half, TypeCR, {});
-    instruction!(CEbreakJalrAdd, 21, Size::Half, TypeCR, {});
-    instruction!(CSwsp, 22, Size::Half, TypeCSS, {});
-    instruction!(Auipc, 23, Size::Word, TypeU, {});
-    instruction!(Branch, 24, Size::Word, TypeB, {
-        pub const BEQ_FUNCT3: u8 = 0;
-        pub const BNE_FUNCT3: u8 = 1;
-        pub const BLT_FUNCT3: u8 = 2;
-        pub const BGE_FUNCT3: u8 = 3;
-        pub const BLTU_FUNCT3: u8 = 4;
-        pub const BGEU_FUNCT3: u8 = 5;
-    });
-    instruction!(Jal, 25, Size::Word, TypeJ, {});
-    instruction!(Jalr, 26, Size::Word, TypeI, {});
-    instruction!(LoadStore, 27, Size::Word, TypeI, {
-        pub const LB_FUNCT3: u8 = 0;
-        pub const LH_FUNCT3: u8 = 1;
-        pub const LW_FUNCT3: u8 = 2;
-        pub const LBU_FUNCT3: u8 = 3;
-        pub const LHU_FUNCT3: u8 = 4;
-        pub const SB_FUNCT3: u8 = 5;
-        pub const SH_FUNCT3: u8 = 6;
-        pub const SW_FUNCT3: u8 = 7;
-    });
-    instruction!(Lui, 28, Size::Word, TypeU, {});
-    instruction!(OpImm, 29, Size::Word, TypeI, {
-        pub const ADDI_FUNC3: u8 = 0;
-        pub const SLLI_FUNC3: u8 = 1;
-        pub const SLTI_FUNC3: u8 = 2;
-        pub const SLTIU_FUNC3: u8 = 3;
-        pub const XORI_FUNC3: u8 = 4;
-        pub const SRLI_SRAI_FUNC3: u8 = 5;
-        pub const ORI_FUNC3: u8 = 6;
-        pub const ANDI_FUNC3: u8 = 7;
-    });
-    instruction!(OpAmo, 30, Size::Word, TypeR, {
-        pub const ADD_FUNCT10: u16 = 0;
-        pub const SUB_FUNCT10: u16 = 1;
-        pub const SLL_FUNCT10: u16 = 2;
-        pub const SLT_FUNCT10: u16 = 3;
-        pub const SLTU_FUNCT10: u16 = 4;
-        pub const XOR_FUNCT10: u16 = 5;
-        pub const SRL_FUNCT10: u16 = 6;
-        pub const SRA_FUNCT10: u16 = 7;
-        pub const OR_FUNCT10: u16 = 8;
-        pub const AND_FUNCT10: u16 = 9;
-        pub const MUL_FUNCT10: u16 = 10;
-        pub const MULH_FUNCT10: u16 = 11;
-        pub const MULHSU_FUNCT10: u16 = 12;
-        pub const MULHU_FUNCT10: u16 = 13;
-        pub const DIV_FUNCT10: u16 = 14;
-        pub const DIVU_FUNCT10: u16 = 15;
-        pub const REM_FUNCT10: u16 = 16;
-        pub const REMU_FUNCT10: u16 = 17;
-        pub const LR_FUNCT10: u16 = 18;
-        pub const SC_FUNCT10: u16 = 19;
-        pub const AMOSWAP_FUNCT10: u16 = 20;
-        pub const AMOADD_FUNCT10: u16 = 21;
-        pub const AMOXOR_FUNCT10: u16 = 22;
-        pub const AMOAND_FUNCT10: u16 = 23;
-        pub const AMOOR_FUNCT10: u16 = 24;
-        pub const AMOMIN_FUNCT10: u16 = 25;
-        pub const AMOMAX_FUNCT10: u16 = 26;
-        pub const AMOMINU_FUNCT10: u16 = 27;
-        pub const AMOMAXU_FUNCT10: u16 = 28;
-    });
-    instruction!(SystemMiscMem, 31, Size::Word, TypeI, {
-        pub const ECALL_IMM: i32 = 0;
-        pub const EBREAK_IMM: i32 = 1;
-        pub const FENCEI_IMM: i32 = 2;
-        pub const WFI_IMM: i32 = 3;
-        pub const MRET_IMM: i32 = 4;
-        pub const EBREAK_ECALL_FENCEI_WFI_MRET_FUNCT3: u8 = 0;
-        pub const CSRRW_FUNCT3: u8 = 1;
-        pub const CSRRS_FUNCT3: u8 = 2;
-        pub const CSRRC_FUNCT3: u8 = 3;
-        pub const CSRRWI_FUNCT3: u8 = 4;
-        pub const CSRRSI_FUNCT3: u8 = 5;
-        pub const CSRRCI_FUNCT3: u8 = 6;
-    });
+    /// Embive Instruction Struct
+    ///
+    /// This struct wraps a raw embive instruction (u32)
+    /// with a custom implementation for the Debug trait.
+    #[derive(Clone, Copy, PartialEq)]
+    pub struct Instruction(u32);
+
+    impl From<u32> for Instruction {
+        #[inline(always)]
+        fn from(inst: u32) -> Self {
+            Self(inst)
+        }
+    }
+
+    impl From<Instruction> for u32 {
+        #[inline(always)]
+        fn from(inst: Instruction) -> u32 {
+            inst.0
+        }
+    }
+
+    impl core::fmt::Debug for Instruction {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            match decode_instruction!(self.0, fmt, (f)) {
+                Some(_) => Ok(()),
+                None => write!(f, "Invalid Instruction"),
+            }
+        }
+    }
+
+    /// Embive Instruction Trait
+    #[allow(dead_code)]
+    pub trait InstructionImpl {
+        /// Instruction Opcode
+        fn opcode() -> u8;
+
+        /// Instruction size in bytes
+        fn size() -> Size;
+
+        /// Encode instruction to u32 (Embive Format)
+        fn encode(&self) -> u32;
+
+        /// Decode instruction from u32 (Embive Format)
+        fn decode(inst: u32) -> Self;
+    }
+
+    // Name, Opcode, Size, Format, Custom Data
+    instructions! {
+        0 => CAddi4spn: TypeCIW = {};
+        1 => CLw: TypeCL = {};
+        2 => CSw: TypeCL = {};
+        3 => CAddi: TypeCI1 = {};
+        4 => CJal: TypeCJ = {};
+        5 => CLi: TypeCI1 = {};
+        6 => CAddi16sp: TypeCI2 = {};
+        7 => CLui: TypeCI3 = {};
+        8 => CSrli: TypeCB1 = {};
+        9 => CSrai: TypeCB1 = {};
+        10 => CAndi: TypeCB2 = {};
+        11 => CSub: TypeCS = {};
+        12 => CXor: TypeCS = {};
+        13 => COr: TypeCS = {};
+        14 => CAnd: TypeCS = {};
+        15 => CJ: TypeCJ = {};
+        16 => CBeqz: TypeCB4 = {};
+        17 => CBnez: TypeCB4 = {};
+        18 => CSlli: TypeCI4 = {};
+        19 => CLwsp: TypeCI5 = {};
+        20 => CJrMv: TypeCR = {};
+        21 => CEbreakJalrAdd: TypeCR = {};
+        22 => CSwsp: TypeCSS = {};
+        23 => Auipc: TypeU = {};
+        24 => Branch: TypeB = {
+            u8: {
+                BEQ_FUNC = 0;
+                BNE_FUNC = 1;
+                BLT_FUNC = 2;
+                BGE_FUNC = 3;
+                BLTU_FUNC = 4;
+                BGEU_FUNC = 5;
+            }
+        };
+        25 => Jal: TypeJ = {};
+        26 => Jalr: TypeI = {};
+        27 => LoadStore: TypeI = {
+            u8: {
+                LB_FUNC = 0;
+                LH_FUNC = 1;
+                LW_FUNC = 2;
+                LBU_FUNC = 3;
+                LHU_FUNC = 4;
+                SB_FUNC = 5;
+                SH_FUNC = 6;
+                SW_FUNC = 7;
+            }
+        };
+        28 => Lui: TypeU = {};
+        29 => OpImm: TypeI = {
+            u8: {
+                ADDI_FUNC = 0;
+                SLLI_FUNC = 1;
+                SLTI_FUNC = 2;
+                SLTIU_FUNC = 3;
+                XORI_FUNC = 4;
+                SRLI_SRAI_FUNC = 5;
+                ORI_FUNC = 6;
+                ANDI_FUNC = 7;
+            }
+        };
+        30 => OpAmo: TypeR = {
+            u16: {
+                ADD_FUNC = 0;
+                SUB_FUNC = 1;
+                SLL_FUNC = 2;
+                SLT_FUNC = 3;
+                SLTU_FUNC = 4;
+                XOR_FUNC = 5;
+                SRL_FUNC = 6;
+                SRA_FUNC = 7;
+                OR_FUNC = 8;
+                AND_FUNC = 9;
+                MUL_FUNC = 10;
+                MULH_FUNC = 11;
+                MULHSU_FUNC = 12;
+                MULHU_FUNC = 13;
+                DIV_FUNC = 14;
+                DIVU_FUNC = 15;
+                REM_FUNC = 16;
+                REMU_FUNC = 17;
+                LR_FUNC = 18;
+                SC_FUNC = 19;
+                AMOSWAP_FUNC = 20;
+                AMOADD_FUNC = 21;
+                AMOXOR_FUNC = 22;
+                AMOAND_FUNC = 23;
+                AMOOR_FUNC = 24;
+                AMOMIN_FUNC = 25;
+                AMOMAX_FUNC = 26;
+                AMOMINU_FUNC = 27;
+                AMOMAXU_FUNC = 28;
+            }
+        };
+        31 => SystemMiscMem: TypeI = {
+            i32: {
+                ECALL_IMM = 0;
+                EBREAK_IMM = 1;
+                FENCEI_IMM = 2;
+                WFI_IMM = 3;
+                MRET_IMM = 4;
+            },
+            u8: {
+                MISC_FUNC = 0;
+                CSRRW_FUNC = 1;
+                CSRRS_FUNC = 2;
+                CSRRC_FUNC = 3;
+                CSRRWI_FUNC = 4;
+                CSRRSI_FUNC = 5;
+                CSRRCI_FUNC = 6;
+            }
+        };
+    }
 }
 
 /// RISC-V Instruction
 #[cfg(feature = "transpiler")]
-pub mod riscv {
+pub(crate) mod riscv {
     use super::riscv_macro::instruction;
 
     // Name, Opcode

@@ -1,5 +1,7 @@
 //! Interpreter Module
 mod config;
+#[cfg(feature = "debugger")]
+pub mod debugger;
 mod decode_execute;
 mod error;
 pub mod memory;
@@ -18,6 +20,8 @@ pub use config::Config;
 pub use error::Error;
 #[doc(inline)]
 pub use state::State;
+
+use crate::instruction::embive::Instruction;
 
 /// Embive Custom Interrupt Code
 pub const EMBIVE_INTERRUPT_CODE: u32 = 16;
@@ -47,15 +51,15 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     /// Arguments:
     /// - `memory`: System memory (code + RAM).
     /// - `config`: Interpreter configuration.
-    pub fn new(memory: &'a mut M, config: Config) -> Result<Self, Error> {
+    pub fn new(memory: &'a mut M, config: Config) -> Self {
         // Create the interpreter
-        Ok(Interpreter {
+        Interpreter {
             program_counter: 0,
             registers: Default::default(),
             memory,
             config,
             memory_reservation: None,
-        })
+        }
     }
 
     /// Reset the interpreter:
@@ -111,7 +115,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     #[inline(always)]
     pub fn step(&mut self) -> Result<State, Error> {
         // Fetch next instruction
-        let data = self.fetch()?;
+        let data = u32::from(self.fetch()?);
 
         // Decode and execute the instruction
         let ret = decode_execute(self, data)?;
@@ -119,16 +123,16 @@ impl<'a, M: Memory> Interpreter<'a, M> {
         Ok(ret)
     }
 
-    /// Fetch the next instruction (raw) from the program counter.
+    /// Fetch the next instruction from the program counter.
     ///
     /// Returns:
-    /// - `Ok(u32)`: The instruction (raw) that was fetched.
+    /// - `Ok(Instruction)`: The instruction that was fetched.
     /// - `Err(Error)`: The program counter is out of bounds.
     #[inline(always)]
-    pub fn fetch(&mut self) -> Result<u32, Error> {
+    pub fn fetch(&self) -> Result<Instruction, Error> {
         let data = self.memory.load(self.program_counter, 4)?;
         // Unwrap is safe because the slice is guaranteed to have 4 elements.
-        Ok(u32::from_le_bytes(data.try_into().unwrap()))
+        Ok(u32::from_le_bytes(data.try_into().unwrap()).into())
     }
 
     /// Execute an interrupt as configured by the interpreted code.
@@ -179,7 +183,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     ///
     ///     - Returns:
     ///         - `Result<i32, NonZeroI32>`: value (`a1`), error (`a0`).
-    pub fn syscall<F>(&mut self, mut function: F)
+    pub fn syscall<F>(&mut self, function: &mut F)
     where
         F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
     {
@@ -263,12 +267,12 @@ mod tests {
         let config = Config::default();
 
         // Create interpreter & run it
-        let mut interpreter = Interpreter::new(&mut memory, config).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, config);
         let state = interpreter.run().unwrap();
 
         // Host Called (syscall)
         assert_eq!(state, State::Called);
-        interpreter.syscall(syscall);
+        interpreter.syscall(&mut syscall);
 
         // Check the result (Ok(0))
         assert_eq!(
@@ -305,12 +309,12 @@ mod tests {
         let config = Config::default();
 
         // Create interpreter & run it
-        let mut interpreter = Interpreter::new(&mut memory, config).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, config);
         let state = interpreter.run().unwrap();
 
         // Host Called (syscall)
         assert_eq!(state, State::Called);
-        interpreter.syscall(syscall);
+        interpreter.syscall(&mut syscall);
 
         // Check the result (Err(1))
         assert_eq!(
@@ -354,12 +358,12 @@ mod tests {
         let config = Config::default();
 
         // Create interpreter & run it
-        let mut interpreter = Interpreter::new(&mut memory, config).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, config);
         let state = interpreter.run().unwrap();
 
         // Host Called (syscall)
         assert_eq!(state, State::Called);
-        interpreter.syscall(syscall);
+        interpreter.syscall(&mut syscall);
 
         // Check the result (Ok(-1))
         assert_eq!(
@@ -404,12 +408,12 @@ mod tests {
         let config = Config::default();
 
         // Create interpreter & run it
-        let mut interpreter = Interpreter::new(&mut memory, config).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, config);
         let state = interpreter.run().unwrap();
 
         // Host Called (syscall)
         assert_eq!(state, State::Called);
-        interpreter.syscall(syscall);
+        interpreter.syscall(&mut syscall);
 
         // Check the result (Err(-1))
         assert_eq!(
@@ -433,7 +437,7 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, Default::default());
         interpreter.reset();
 
         assert_eq!(interpreter.program_counter, 0);
@@ -456,8 +460,7 @@ mod tests {
                 instruction_limit: 2,
                 ..Default::default()
             },
-        )
-        .unwrap();
+        );
 
         // Run the interpreter
         let result = interpreter.run();
@@ -487,8 +490,7 @@ mod tests {
                 instruction_limit: 0,
                 ..Default::default()
             },
-        )
-        .unwrap();
+        );
 
         // Run the interpreter
         let result = interpreter.run();
@@ -515,7 +517,7 @@ mod tests {
         transpile_raw(&mut code).unwrap();
 
         let mut memory = SliceMemory::new(&code, &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Config::default()).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, Config::default());
 
         // Run the interpreter
         let result = interpreter.run();
@@ -567,7 +569,7 @@ mod tests {
     #[test]
     fn test_interrupt_disabled() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, Default::default());
 
         // interrupt
         let result = interpreter.interrupt();

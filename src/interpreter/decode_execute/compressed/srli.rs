@@ -1,21 +1,22 @@
 use crate::instruction::embive::CSrli;
+use crate::instruction::embive::InstructionImpl;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
-use super::super::DecodeExecute;
+use super::super::Execute;
 
-impl<M: Memory> DecodeExecute<M> for CSrli {
+impl<M: Memory> Execute<M> for CSrli {
     #[inline(always)]
-    fn decode_execute(data: u32, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
-        let inst = Self::decode(data);
-
+    fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
         // Zero-extended right shift
-        if inst.rd_rs1 != 0 {
-            let rs1 = interpreter.registers.cpu.get_mut(inst.rd_rs1)?;
-            *rs1 = (*rs1 as u32).wrapping_shr(inst.imm as u32) as i32;
+        if self.0.rd_rs1 != 0 {
+            let rs1 = interpreter.registers.cpu.get_mut(self.0.rd_rs1)?;
+            *rs1 = (*rs1 as u32).wrapping_shr(self.0.imm as u32) as i32;
         }
 
         // Go to next instruction
-        interpreter.program_counter = interpreter.program_counter.wrapping_add(Self::SIZE as u32);
+        interpreter.program_counter = interpreter
+            .program_counter
+            .wrapping_add(Self::size() as u32);
 
         Ok(State::Running)
     }
@@ -25,6 +26,7 @@ impl<M: Memory> DecodeExecute<M> for CSrli {
 mod tests {
     use crate::{
         format::{Format, TypeCB1},
+        instruction::embive::InstructionImpl,
         interpreter::memory::SliceMemory,
     };
 
@@ -33,12 +35,12 @@ mod tests {
     #[test]
     fn test_csrli() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, Default::default());
         let srli = TypeCB1 { rd_rs1: 1, imm: 3 };
 
         *interpreter.registers.cpu.get_mut(1).unwrap() = -1;
 
-        let result = CSrli::decode_execute(srli.to_embive(), &mut interpreter);
+        let result = CSrli::decode(srli.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(
             *interpreter.registers.cpu.get_mut(1).unwrap(),

@@ -9,7 +9,7 @@
 #![deny(unsafe_code)]
 
 mod format;
-mod instruction;
+pub mod instruction;
 #[cfg(feature = "interpreter")]
 pub mod interpreter;
 #[cfg(feature = "transpiler")]
@@ -78,8 +78,7 @@ mod tests {
             Config {
                 ..Default::default()
             },
-        )
-        .unwrap();
+        );
 
         // Set program counter to RAM (code start)
         interpreter.program_counter = RAM_OFFSET;
@@ -92,7 +91,7 @@ mod tests {
             match interpreter.run().unwrap() {
                 State::Running => {}
                 State::Called => {
-                    interpreter.syscall(syscall);
+                    interpreter.syscall(&mut syscall);
                 }
                 State::Waiting => {}
                 State::Halted => break,

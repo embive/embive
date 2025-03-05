@@ -41,6 +41,8 @@ jobs:
         run: cargo fmt --all --check
       - name: Clippy Check
         run: cargo clippy --all-features -- -D warnings
+      - name: Build without features
+        run: cargo build --verbose --no-default-features
   
   minrust_test:
     name: Min Rust Version Test

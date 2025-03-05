@@ -1,6 +1,7 @@
 //! RISC-V Instruction Macro module.
 
-/// Macro for RISC-V instructions
+/// Macro for RISC-V Instructions
+///
 /// Arguments:
 /// - `name`: Instruction name.
 /// - `opcode`: Instruction opcode.

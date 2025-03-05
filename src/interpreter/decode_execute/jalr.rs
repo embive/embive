@@ -1,24 +1,25 @@
+use crate::instruction::embive::InstructionImpl;
 use crate::instruction::embive::Jalr;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
-use super::DecodeExecute;
+use super::Execute;
 
-impl<M: Memory> DecodeExecute<M> for Jalr {
+impl<M: Memory> Execute<M> for Jalr {
     #[inline(always)]
-    fn decode_execute(data: u32, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
-        let inst = Self::decode(data);
-
+    fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
         // Get the value of the source register.
-        let rs1 = interpreter.registers.cpu.get(inst.rs1)?;
+        let rs1 = interpreter.registers.cpu.get(self.0.rs1)?;
 
         // Load pc + instruction size into the destination register (if not unconditional).
-        if inst.rd_rs2 != 0 {
-            let rd = interpreter.registers.cpu.get_mut(inst.rd_rs2)?;
-            *rd = interpreter.program_counter.wrapping_add(Self::SIZE as u32) as i32;
+        if self.0.rd_rs2 != 0 {
+            let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
+            *rd = interpreter
+                .program_counter
+                .wrapping_add(Self::size() as u32) as i32;
         }
 
         // Set the program counter to the new address.
-        interpreter.program_counter = (rs1 as u32).wrapping_add_signed(inst.imm);
+        interpreter.program_counter = (rs1 as u32).wrapping_add_signed(self.0.imm);
 
         // Continue execution
         Ok(State::Running)
@@ -29,6 +30,7 @@ impl<M: Memory> DecodeExecute<M> for Jalr {
 mod tests {
     use crate::{
         format::{Format, TypeI},
+        instruction::embive::InstructionImpl,
         interpreter::memory::SliceMemory,
     };
 
@@ -37,10 +39,10 @@ mod tests {
     #[test]
     fn test_jlr_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, Default::default());
         interpreter.program_counter = 0x1;
         let jalr = TypeI {
-            funct3: 0x0,
+            func: 0x0,
             rd_rs2: 1,
             rs1: 2,
             imm: -0x100,
@@ -48,7 +50,7 @@ mod tests {
 
         *interpreter.registers.cpu.get_mut(2).unwrap() = -0x200;
 
-        let result = Jalr::decode_execute(jalr.to_embive(), &mut interpreter);
+        let result = Jalr::decode(jalr.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(interpreter.program_counter, (-0x200i32 + -0x100i32) as u32);
@@ -57,10 +59,10 @@ mod tests {
     #[test]
     fn test_jlr() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, Default::default());
         interpreter.program_counter = 0x1;
         let jalr = TypeI {
-            funct3: 0x0,
+            func: 0x0,
             rd_rs2: 1,
             rs1: 2,
             imm: 0x100,
@@ -68,7 +70,7 @@ mod tests {
 
         *interpreter.registers.cpu.get_mut(2).unwrap() = 0x200;
 
-        let result = Jalr::decode_execute(jalr.to_embive(), &mut interpreter);
+        let result = Jalr::decode(jalr.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(interpreter.program_counter, 0x300);
@@ -77,10 +79,10 @@ mod tests {
     #[test]
     fn test_jlr_same_reg() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default()).unwrap();
+        let mut interpreter = Interpreter::new(&mut memory, Default::default());
         interpreter.program_counter = 0x1;
         let jalr = TypeI {
-            funct3: 0x0,
+            func: 0x0,
             rd_rs2: 1,
             rs1: 1,
             imm: 0x100,
@@ -88,7 +90,7 @@ mod tests {
 
         *interpreter.registers.cpu.get_mut(1).unwrap() = 0x200;
 
-        let result = Jalr::decode_execute(jalr.to_embive(), &mut interpreter);
+        let result = Jalr::decode(jalr.to_embive()).execute(&mut interpreter);
         assert_eq!(result, Ok(State::Running));
         assert_eq!(*interpreter.registers.cpu.get_mut(1).unwrap(), 0x5);
         assert_eq!(interpreter.program_counter, 0x300);

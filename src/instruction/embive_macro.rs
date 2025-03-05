@@ -1,41 +1,82 @@
 //! Embive Instruction Macro module.
 
-/// Macro for Embive instructions
-/// Arguments:
-/// - `name`: Instruction name.
-/// - `opcode`: Instruction opcode.
-/// - `size`: Instruction size in bytes.
-/// - `format`: Instruction format.
-/// - `custom`: Instruction specific code/data.
+/// Macro for Embive Instruction
 macro_rules! instruction {
-    ($name:ident, $opcode:expr, $size:expr, $format:ty, $custom:tt) => {
-        /// Embive Instruction
-        pub struct $name {}
-
+    ($name:ident, $opcode:expr, $format:ty, {$($cty:ty: {$($cname:ident = $cvalue:expr);* $(;)?}),* $(,)?}) => {
         impl $name {
+            $(
+                $(
+                    /// Instruction Constant Value
+                    pub const $cname: $cty = $cvalue;
+                )*
+            )*
+        }
+        crate::instruction::embive_macro::instruction!($name, $opcode, $format);
+    };
+    ($name:ident, $opcode:expr, $format:ty) => {
+        /// Embive Instruction
+        #[derive(Debug, Clone, Copy, PartialEq)]
+        pub struct $name (pub $format);
+
+        impl crate::instruction::embive::InstructionImpl for $name {
             /// Instruction Opcode
-            pub const OPCODE: u8 = $opcode;
-
-            /// Instruction size in bytes
-            pub const SIZE: crate::instruction::Size = $size;
-
-            /// Decode instruction from u32 (Embive Format)
-            #[cfg(feature = "interpreter")]
             #[inline(always)]
-            pub fn decode(inst: u32) -> $format {
-                <$format>::from_embive(inst)
+            fn opcode() -> u8 {
+                $opcode
+            }
+
+            /// Instruction size
+            #[inline(always)]
+            fn size() -> crate::format::Size {
+                <$format>::SIZE
             }
 
             /// Encode instruction to u32 (Embive Format)
-            #[cfg(feature = "transpiler")]
             #[inline(always)]
-            pub fn encode(inst: $format) -> u32 {
-                inst.to_embive()
+            fn encode(&self) -> u32 {
+                self.0.to_embive()
+            }
+
+            /// Decode instruction from u32 (Embive Format)
+            #[inline(always)]
+            fn decode(inst: u32) -> Self {
+                Self(<$format>::from_embive(inst))
             }
         }
 
-        impl $name $custom
+        impl From<$format> for $name {
+            fn from(format: $format) -> Self {
+                Self(format)
+            }
+        }
+    };
+}
+
+/// Macro for Embive Instructions
+macro_rules! instructions {
+    {$($opcode:expr => $name:ident: $format:ty = $consts:tt);* $(;)?} => {
+        $(
+            crate::instruction::embive_macro::instruction!($name, $opcode, $format, $consts);
+        )*
+
+        /// Embive Instruction Decoding Macro
+        macro_rules! decode_instruction {
+            ($inst:expr, $method:tt, $params:tt) => {
+                {
+                    use crate::instruction::embive::InstructionImpl;
+                    match ($inst & 0x1F) as u8 {
+                        $(
+                            $opcode => Some(crate::instruction::embive::$name::decode($inst).$method$params),
+                        )*
+                        _ => None,
+                    }
+                }
+            };
+        }
+
+        pub(crate) use decode_instruction;
     };
 }
 
 pub(super) use instruction;
+pub(super) use instructions;

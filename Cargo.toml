@@ -14,11 +14,14 @@ readme = "README.md"
 
 [dependencies]
 elf = { version = "0.7.4", optional = true, default-features = false }
+gdbstub = { version = "0.7.5", optional = true, default-features = false, features = ["paranoid_unsafe", "core_error"] }
+gdbstub_arch = { version = "0.3.1", optional = true }
 
 [features]
-default = ["transpiler", "interpreter"]
+default = ["transpiler", "interpreter", "debugger"]
 transpiler = ["dep:elf"]
 interpreter = []
+debugger = ["dep:gdbstub", "dep:gdbstub_arch", "interpreter"]
 
 [package.metadata.docs.rs]
 all-features = true
