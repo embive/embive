@@ -1,0 +1,28 @@
+[package]
+name = "embive-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.embive]
+path = ".."
+
+[[bin]]
+name = "interpreter"
+path = "fuzz_targets/interpreter.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "transpiler"
+path = "fuzz_targets/transpiler.rs"
+test = false
+doc = false
+bench = false

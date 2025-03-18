@@ -23,6 +23,9 @@ transpiler = ["dep:elf"]
 interpreter = []
 debugger = ["dep:gdbstub", "dep:gdbstub_arch", "interpreter"]
 
+[workspace]
+members = ["fuzz"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
