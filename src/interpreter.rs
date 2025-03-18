@@ -1,7 +1,7 @@
 //! Interpreter Module
 mod config;
 #[cfg(feature = "debugger")]
-pub mod debugger;
+mod debugger;
 mod decode_execute;
 mod error;
 pub mod memory;
@@ -20,6 +20,10 @@ pub use config::Config;
 pub use error::Error;
 #[doc(inline)]
 pub use state::State;
+
+#[cfg(feature = "debugger")]
+#[doc(inline)]
+pub use debugger::Debugger;
 
 use crate::instruction::embive::Instruction;
 

@@ -14,8 +14,8 @@ use std::net::TcpListener;
 use std::net::TcpStream;
 use std::num::NonZeroI32;
 
-use embive::interpreter::debugger::Debugger;
 use embive::interpreter::memory::{Memory, SliceMemory};
+use embive::interpreter::Debugger;
 use embive::interpreter::Interpreter;
 use embive::interpreter::SYSCALL_ARGS;
 use embive::transpiler::transpile_elf;
