@@ -56,6 +56,6 @@ jobs:
         with:
           toolchain: ${{ env.rust_min }}
       - name: Build
-        run: cargo build --verbose --all-features
+        run: cargo build --verbose
       - name: Test
-        run: cargo test --verbose --all-features
+        run: cargo test --verbose

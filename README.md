@@ -144,11 +144,12 @@ You can read more about interrupts in the `interpreter::Engine::interrupt` docum
 
 ## Features
 
-| Feature       | Default | Description                         | Dependencies |
-|---------------|---------|-------------------------------------|--------------|
-| `transpiler`  | Yes     | ELF-to-bytecode conversion          | [elf](https://docs.rs/elf/latest/elf/)        |
-| `interpreter` | Yes     | Execution engine                    | None         |
-| `debugger`    | Yes     | GDB Debugger                        | [gdbstub](https://github.com/daniel5151/gdbstub) & [gdbstub_arch](https://github.com/daniel5151/gdbstub) |
+| Feature       | Default | Description                         | MSRV | Dependencies |
+|---------------|---------|-------------------------------------|------|--------------|
+| `transpiler`  | ✅     | ELF-to-bytecode conversion          | 1.81 | [elf](https://docs.rs/elf/latest/elf/)        |
+| `interpreter` | ✅     | Execution engine                    | 1.81 | None         |
+| `debugger`    | ✅     | GDB Debugger                        | 1.81 | [gdbstub](https://github.com/daniel5151/gdbstub) & [gdbstub_arch](https://github.com/daniel5151/gdbstub) |
+| `async`       | ❌     | Asynchronous syscall handling       | 1.85 | None         |
 
 ## Supported RISC-V Extensions
 
@@ -175,7 +176,8 @@ syscalls.
 
 ## Minimum supported Rust version (MSRV)
 
-Embive is guaranteed to compile on stable Rust 1.81 and up.
+Embive default features are guaranteed to compile on stable Rust 1.81 and up.  
+Check the [Features section](#features) for more information.
 
 ## License
 

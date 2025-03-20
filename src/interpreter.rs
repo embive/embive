@@ -170,7 +170,44 @@ impl<'a, M: Memory> Interpreter<'a, M> {
         Ok(())
     }
 
+    /// Get the syscall arguments.
+    #[inline(always)]
+    fn syscall_arguments(&mut self) -> (i32, &[i32; SYSCALL_ARGS], &mut M) {
+        // Syscall Number
+        let nr = self.registers.cpu.inner[CPURegister::A7 as usize];
+
+        // Syscall Arguments
+        let args = self.registers.cpu.inner[CPURegister::A0 as usize..]
+            .first_chunk()
+            // Unwrap is safe because the slice is guaranteed to have more than SYSCALL_ARGS elements.
+            .unwrap();
+
+        (nr, args, self.memory)
+    }
+
+    /// Set the syscall result.
+    #[inline(always)]
+    fn syscall_result(&mut self, result: Result<i32, NonZeroI32>) {
+        match result {
+            Ok(value) => {
+                // Clear error code
+                self.registers.cpu.inner[CPURegister::A0 as usize] = 0;
+
+                // Set return value
+                self.registers.cpu.inner[CPURegister::A1 as usize] = value;
+            }
+            Err(error) => {
+                // Set error code
+                self.registers.cpu.inner[CPURegister::A0 as usize] = error.into();
+
+                // Clear return value
+                self.registers.cpu.inner[CPURegister::A1 as usize] = 0;
+            }
+        }
+    }
+
     /// Handle a system call.
+    ///
     /// System calls are triggered by the `ecall` instruction.
     /// The following registers are used:
     /// - `a7`: Syscall number.
@@ -191,32 +228,47 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     where
         F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
     {
-        // Syscall Number
-        let nr = self.registers.cpu.inner[CPURegister::A7 as usize];
-
-        // Syscall Arguments
-        let args = self.registers.cpu.inner[CPURegister::A0 as usize..]
-            .first_chunk()
-            // Unwrap is safe because the slice is guaranteed to have more than SYSCALL_ARGS elements.
-            .unwrap();
+        // Get syscall arguments
+        let (nr, args, memory) = self.syscall_arguments();
 
         // Call the syscall function
-        match function(nr, args, self.memory) {
-            Ok(value) => {
-                // Clear error code
-                self.registers.cpu.inner[CPURegister::A0 as usize] = 0;
+        let result = function(nr, args, memory);
 
-                // Set return value
-                self.registers.cpu.inner[CPURegister::A1 as usize] = value;
-            }
-            Err(error) => {
-                // Set error code
-                self.registers.cpu.inner[CPURegister::A0 as usize] = error.into();
+        // Set the syscall result
+        self.syscall_result(result);
+    }
 
-                // Clear return value
-                self.registers.cpu.inner[CPURegister::A1 as usize] = 0;
-            }
-        }
+    /// Handle a system call asynchronously.
+    ///
+    /// System calls are triggered by the `ecall` instruction.
+    /// The following registers are used:
+    /// - `a7`: Syscall number.
+    /// - `a0` to `a6`: Arguments.
+    /// - `a0`: Return error code.
+    /// - `a1`: Return value.
+    ///
+    /// Arguments:
+    /// - `function`: System call function (AsyncFnMut closure):
+    ///     - Arguments:
+    ///         - `i32`: Syscall number (`a7`).
+    ///         - `[i32; SYSCALL_ARGS]`: Arguments (`a0` to `a6`).
+    ///         - `Memory`: System Memory (code + RAM).
+    ///
+    ///     - Returns:
+    ///         - `Result<i32, NonZeroI32>`: value (`a1`), error (`a0`).
+    #[cfg(feature = "async")]
+    pub async fn syscall_async<F>(&mut self, function: &mut F)
+    where
+        F: AsyncFnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+    {
+        // Get syscall arguments
+        let (nr, args, memory) = self.syscall_arguments();
+
+        // Call the syscall function
+        let result = function(nr, args, memory).await;
+
+        // Set the syscall result
+        self.syscall_result(result);
     }
 }
 
