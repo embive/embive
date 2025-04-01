@@ -43,6 +43,12 @@ jobs:
         run: cargo clippy --all-features -- -D warnings
       - name: Build without features
         run: cargo build --verbose --no-default-features
+      - name: GDB Example
+        run: cargo build --verbose --example gdb_tcp --features debugger
+      - name: Embassy Example
+        run: |
+          cd examples/embassy
+          cargo build --verbose --release
   
   minrust_test:
     name: Min Rust Version Test

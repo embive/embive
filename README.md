@@ -17,7 +17,7 @@ A lightweight, recoverable sandbox for executing untrusted RISC-V code in constr
 
 Embive supports RISC-V `RV32IMAC` instruction-set and uses a two-stage execution model:
 
-1. Transpilation  
+1. Transpilation ([more info. here](TRANSPILER.md))  
     Converts RISC-V ELF file to an optimized bytecode binary:
     - Reorder immediates
     - Expand compressed registers wherever possible
@@ -60,7 +60,7 @@ const ELF_FILE: &[u8] = include_bytes!(
     concat!(env!("CARGO_MANIFEST_DIR"), "/tests/app.elf")
 );
 
-// A simple syscall implementation. Check [`embive::interpreter::SyscallFn`].
+// A simple syscall implementation
 fn syscall<M: Memory>(
     nr: i32,
     args: &[i32; SYSCALL_ARGS],
@@ -134,7 +134,7 @@ fn main() {
 
 System calls are a way for the interpreted code to interact with the host environment.
 If provided, the system call function will be called when a `ecall` instruction is executed.
-You can read more about system calls in the `interpreter::SyscallFn` documentation.
+You can read more about system calls in the `interpreter::Engine::syscall` documentation.
 
 ## Interrupts
 
@@ -148,7 +148,7 @@ You can read more about interrupts in the `interpreter::Engine::interrupt` docum
 |---------------|---------|-------------------------------------|------|--------------|
 | `transpiler`  | ✅     | ELF-to-bytecode conversion          | 1.81 | [elf](https://docs.rs/elf/latest/elf/)        |
 | `interpreter` | ✅     | Execution engine                    | 1.81 | None         |
-| `debugger`    | ✅     | GDB Debugger                        | 1.81 | [gdbstub](https://github.com/daniel5151/gdbstub) & [gdbstub_arch](https://github.com/daniel5151/gdbstub) |
+| `debugger`    | ❌     | GDB Debugger                        | 1.81 | [gdbstub](https://github.com/daniel5151/gdbstub) & [gdbstub_arch](https://github.com/daniel5151/gdbstub) |
 | `async`       | ❌     | Asynchronous syscall handling       | 1.85 | None         |
 
 ## Supported RISC-V Extensions

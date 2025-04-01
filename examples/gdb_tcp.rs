@@ -85,7 +85,7 @@ impl ConnectionExt for TcpConnection {
     }
 }
 
-// A simple syscall implementation. Check [`embive::interpreter::SyscallFn`].
+// A simple syscall implementation
 fn syscall<M: Memory>(
     nr: i32,
     args: &[i32; SYSCALL_ARGS],

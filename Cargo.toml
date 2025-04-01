@@ -18,15 +18,22 @@ gdbstub = { version = "0.7.5", optional = true, default-features = false, featur
 gdbstub_arch = { version = "0.3.1", optional = true }
 
 [features]
-default = ["transpiler", "interpreter", "debugger"]
+default = ["transpiler", "interpreter"]
 transpiler = ["dep:elf"]
 interpreter = []
 async = []
 debugger = ["dep:gdbstub", "dep:gdbstub_arch", "interpreter"]
 
 [workspace]
-members = ["fuzz"]
+members = [ "examples/embassy","fuzz"]
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[[example]]
+name = "gdb_tcp"
+path = "examples/gdb_tcp.rs"
+required-features = ["debugger"]
+
+

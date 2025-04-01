@@ -1,0 +1,13 @@
+[package]
+name = "embive-embassy-example"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+embive = { path = "../../", features = ["async"] }
+
+embassy-executor = { version = "0.7.0", features = ["arch-std", "executor-thread", "task-arena-size-131072", "log"] }
+embassy-futures = { version = "0.1.1" }
+
+log = "0.4.14"
+env_logger = "0.9.0"
