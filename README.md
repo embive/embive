@@ -18,12 +18,12 @@ A lightweight, recoverable sandbox for executing untrusted RISC-V code in constr
 Embive supports RISC-V `RV32IMAC` instruction-set and uses a two-stage execution model:
 
 1. Transpilation ([more info. here](TRANSPILER.md))  
-    Converts RISC-V ELF file to an optimized bytecode binary:
+   Converts RISC-V ELF file to an optimized bytecode binary:
     - Reorder immediates
     - Expand compressed registers wherever possible
     - Simplify instruction matching
 2. Interpretation  
-    Executes the bytecode using a register-based virtual machine with:
+   Executes the bytecode using a register-based virtual machine with:
     - Memory isolation
     - Syscall and interruption support
     - Instruction limiting
@@ -49,7 +49,7 @@ use core::num::NonZeroI32;
 use embive::{
     interpreter::{
         memory::{Memory, SliceMemory},
-        registers::CPURegister,
+        registers::CPURegister, Error,
         Config, Interpreter, State, SYSCALL_ARGS,
     },
     transpiler::transpile_elf,
@@ -65,9 +65,9 @@ fn syscall<M: Memory>(
     nr: i32,
     args: &[i32; SYSCALL_ARGS],
     memory: &mut M,
-) -> Result<i32, NonZeroI32> {
-    // Match the syscall number
-    match nr {
+) -> Result<Result<i32, NonZeroI32>, Error> {
+    // Match the syscall number (always succeeds)
+    Ok(match nr {
         // Add two numbers (arg[0] + arg[1])
         1 => Ok(args[0] + args[1]),
         // Load from RAM (arg[0])
@@ -76,7 +76,7 @@ fn syscall<M: Memory>(
             Err(_) => Err(1.try_into().unwrap()), // Error loading
         },
         _ => Err(2.try_into().unwrap()), // Not implemented
-    }
+    })
 }
 
 fn main() {
@@ -103,7 +103,7 @@ fn main() {
     loop {
         match interpreter.run().unwrap() {
             State::Running => {}
-            State::Called => interpreter.syscall(&mut syscall),
+            State::Called => interpreter.syscall(&mut syscall).unwrap(),
             State::Waiting => interpreter.interrupt().unwrap(),
             State::Halted => break,
         }

@@ -23,13 +23,13 @@ use gdbstub::{
 use gdbstub_arch::riscv::{reg, Riscv32};
 
 use super::{Debugger, ExecMode};
-use crate::interpreter::{error::Error, memory::Memory, registers::CSOperation, SYSCALL_ARGS};
+use crate::interpreter::{memory::Memory, registers::CSOperation, Error, SYSCALL_ARGS};
 
 /// Base target implementation
 impl<
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > Target for Debugger<'_, M, C, F, N>
 {
@@ -51,7 +51,7 @@ impl<
 impl<
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > SingleThreadBase for Debugger<'_, M, C, F, N>
 {
@@ -118,7 +118,7 @@ impl<
 impl<
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > Breakpoints for Debugger<'_, M, C, F, N>
 {
@@ -132,7 +132,7 @@ impl<
 impl<
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > SwBreakpoint for Debugger<'_, M, C, F, N>
 {
@@ -161,7 +161,7 @@ impl<
 impl<
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > SingleThreadResume for Debugger<'_, M, C, F, N>
 {
@@ -180,7 +180,7 @@ impl<
 impl<
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > SingleThreadSingleStep for Debugger<'_, M, C, F, N>
 {
@@ -194,7 +194,7 @@ impl<
 impl<
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > SingleRegisterAccess<()> for Debugger<'_, M, C, F, N>
 {

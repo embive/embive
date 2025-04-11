@@ -16,6 +16,7 @@ use std::num::NonZeroI32;
 
 use embive::interpreter::memory::{Memory, SliceMemory};
 use embive::interpreter::Debugger;
+use embive::interpreter::Error;
 use embive::interpreter::Interpreter;
 use embive::interpreter::SYSCALL_ARGS;
 use embive::transpiler::transpile_elf;
@@ -90,9 +91,9 @@ fn syscall<M: Memory>(
     nr: i32,
     args: &[i32; SYSCALL_ARGS],
     memory: &mut M,
-) -> Result<i32, NonZeroI32> {
+) -> Result<Result<i32, NonZeroI32>, Error> {
     // Match the syscall number
-    match nr {
+    Ok(match nr {
         // Add two numbers (arg[0] + arg[1])
         1 => Ok(args[0] + args[1]),
         // Load from RAM (arg[0])
@@ -101,7 +102,7 @@ fn syscall<M: Memory>(
             Err(_) => Err(1.try_into().unwrap()), // Error loading
         },
         _ => Err(2.try_into().unwrap()), // Not implemented
-    }
+    })
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

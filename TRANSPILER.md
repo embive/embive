@@ -24,20 +24,20 @@ RISC-V immediate values are encoded with bit ordering optimized for hardware dec
 3. **Sequential Instruction Encoding**  
 Standard RISC-V encodings leave gaps between instruction opcodes, especially in smaller ISAs or those without extensions. Embive reassigns merged opcodes sequentially, ensuring a compact encoding that uses the fewest bits necessary. Here is an example:
 
-| Instruction | RISC-V Opcode | RISC-V Function | Embive Opcode | Embive Function |
-|-------------|---------------|-----------------|---------------|-----------------|
-| C.ADDI4SPN  | 00            | 000             | 00000         |                 |
-| C.LW        | 00            | 010             | 00001         |                 |
-| ...         | ...           | ...             | ...           | ...             |
-| C.SWSP      | 10            | 110             | 10110         |                 |
-| AUIPC       | 0010111       |                 | 10111         |                 |
-| BEQ         | 1100011       | 000             | 11000         | 000             |
-| BNE         | 1100011       | 001             | 11000         | 001             |
-| ...         | ...           | ...             | ...           | ...             |
-| BGEU        | 1100011       | 111             | 11000         | 101             |
-| JAL         | 1101111       |                 | 11001         |                 |
-| ...         | ...           | ...             | ...           | ...             |
-| CSRRCI      | 1110011       | 111             | 11111         | 110             |
+    | Instruction | RISC-V Opcode | RISC-V Function | Embive Opcode | Embive Function |
+    |-------------|---------------|-----------------|---------------|-----------------|
+    | C.ADDI4SPN  | 00            | 000             | 00000         |                 |
+    | C.LW        | 00            | 010             | 00001         |                 |
+    | ...         | ...           | ...             | ...           | ...             |
+    | C.SWSP      | 10            | 110             | 10110         |                 |
+    | AUIPC       | 0010111       |                 | 10111         |                 |
+    | BEQ         | 1100011       | 000             | 11000         | 000             |
+    | BNE         | 1100011       | 001             | 11000         | 001             |
+    | ...         | ...           | ...             | ...           | ...             |
+    | BGEU        | 1100011       | 111             | 11000         | 101             |
+    | JAL         | 1101111       |                 | 11001         |                 |
+    | ...         | ...           | ...             | ...           | ...             |
+    | CSRRCI      | 1110011       | 111             | 11111         | 110             |
 
 4. **Compressed Registers Expansion**  
 Compressed RISC-V instructions (C extension) use 3-bit register indexes due to space constraints, requiring expansion during decoding. Embive statically expands these registers wherever possible, reserving compressed indexes only where necessary. This optimization is feasible thanks to space savings from the previous steps. Here is an example:  

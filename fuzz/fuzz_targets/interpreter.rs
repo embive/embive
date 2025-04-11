@@ -14,8 +14,8 @@ fn syscall<M: Memory>(
     _nr: i32,
     _args: &[i32; SYSCALL_ARGS],
     _memory: &mut M,
-) -> Result<i32, NonZeroI32> {
-    Ok(0)
+) -> Result<Result<i32, NonZeroI32>, ()> {
+    Ok(Ok(0))
 }
 
 fuzz_target!(|data: &[u8]| {
@@ -26,7 +26,11 @@ fuzz_target!(|data: &[u8]| {
 
     loop {
         match interpreter.run() {
-            Ok(State::Called) => interpreter.syscall(&mut syscall),
+            Ok(State::Called) => {
+                if let Err(_) = interpreter.syscall(&mut syscall) {
+                    break;
+                }
+            }
             Ok(State::Waiting) => {
                 if let Err(_) = interpreter.interrupt() {
                     break;

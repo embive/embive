@@ -26,7 +26,7 @@ mod tests {
     use crate::{
         interpreter::{
             memory::{SliceMemory, RAM_OFFSET},
-            Config, Interpreter, State, SYSCALL_ARGS,
+            Config, Error, Interpreter, State, SYSCALL_ARGS,
         },
         transpiler::transpile_elf,
     };
@@ -45,7 +45,7 @@ mod tests {
         nr: i32,
         args: &[i32; SYSCALL_ARGS],
         _memory: &mut SliceMemory<'_>,
-    ) -> Result<i32, NonZeroI32> {
+    ) -> Result<Result<i32, NonZeroI32>, Error> {
         if nr == 93 {
             if args[0] == 0 {
                 println!("Test was successful");
@@ -57,7 +57,7 @@ mod tests {
         }
 
         SYSCALL_COUNTER.with(|c| *c.borrow_mut() += 1);
-        Ok(0)
+        Ok(Ok(0))
     }
 
     fn execute_bin_test(test: DirEntry) {
@@ -91,7 +91,7 @@ mod tests {
             match interpreter.run().unwrap() {
                 State::Running => {}
                 State::Called => {
-                    interpreter.syscall(&mut syscall);
+                    interpreter.syscall(&mut syscall).unwrap();
                 }
                 State::Waiting => {}
                 State::Halted => break,

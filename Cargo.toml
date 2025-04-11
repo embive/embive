@@ -25,7 +25,7 @@ async = []
 debugger = ["dep:gdbstub", "dep:gdbstub_arch", "interpreter"]
 
 [workspace]
-members = [ "examples/embassy","fuzz"]
+members = ["examples/embassy", "fuzz"]
 
 [package.metadata.docs.rs]
 all-features = true

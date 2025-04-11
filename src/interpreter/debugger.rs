@@ -12,7 +12,7 @@ use gdbstub::{
     },
 };
 
-use super::{memory::Memory, Interpreter, State, SYSCALL_ARGS};
+use super::{memory::Memory, Error, Interpreter, State, SYSCALL_ARGS};
 
 /// Debugger Execution Mode
 #[derive(Debug, PartialEq)]
@@ -34,7 +34,7 @@ pub struct Debugger<
     'a,
     M: Memory,
     C: ConnectionExt,
-    F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+    F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
     const N: usize = 4,
 > {
     interpreter: Interpreter<'a, M>,
@@ -48,7 +48,7 @@ impl<
         'a,
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > From<Debugger<'a, M, C, F, N>> for Interpreter<'a, M>
 {
@@ -61,7 +61,7 @@ impl<
         'a,
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > Debugger<'a, M, C, F, N>
 {
@@ -80,7 +80,7 @@ impl<
 impl<
         M: Memory,
         C: ConnectionExt,
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, Error>,
         const N: usize,
     > BlockingEventLoop for Debugger<'_, M, C, F, N>
 {
@@ -112,7 +112,10 @@ impl<
                         SingleThreadStopReason::Terminated(Signal::SIGSTOP),
                     ))
                 }
-                State::Called => target.interpreter.syscall(&mut target.syscall_fn),
+                State::Called => target
+                    .interpreter
+                    .syscall(&mut target.syscall_fn)
+                    .map_err(run_blocking::WaitForStopReasonError::Target)?,
                 State::Waiting => target
                     .interpreter
                     .interrupt()

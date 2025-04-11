@@ -20,13 +20,13 @@ async fn syscall<M: Memory>(
     nr: i32,
     args: &[i32; SYSCALL_ARGS],
     memory: &mut M,
-) -> Result<i32, NonZeroI32> {
+) -> Result<Result<i32, NonZeroI32>, ()> {
     info!("Entering syscall: {}", nr);
     yield_now().await; // Simulate async syscall delay
     info!("Args: {:?}", args);
 
-    // Match the syscall number
-    match nr {
+    // Match the syscall number (always succeeds)
+    Ok(match nr {
         // Add two numbers (arg[0] + arg[1])
         1 => Ok(args[0] + args[1]),
         // Load from RAM (arg[0])
@@ -35,7 +35,7 @@ async fn syscall<M: Memory>(
             Err(_) => Err(1.try_into().unwrap()), // Error loading
         },
         _ => Err(2.try_into().unwrap()), // Not implemented
-    }
+    })
 }
 
 #[embassy_executor::task]
@@ -81,7 +81,7 @@ async fn main(spawner: Spawner) {
                 info!("Yielding...");
                 yield_now().await;
             }
-            State::Called => interpreter.syscall_async(&mut syscall).await,
+            State::Called => interpreter.syscall_async(&mut syscall).await.unwrap(),
             State::Waiting => interpreter.interrupt().unwrap(),
             State::Halted => break,
         }

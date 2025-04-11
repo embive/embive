@@ -223,19 +223,23 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     ///         - `Memory`: System Memory (code + RAM).
     ///
     ///     - Returns:
-    ///         - `Result<i32, NonZeroI32>`: value (`a1`), error (`a0`).
-    pub fn syscall<F>(&mut self, function: &mut F)
+    ///         - `Result<Result<i32, NonZeroI32>, E>`:
+    ///             - Outer `Result`: Ok(()) if the syscall was successful, Err(E) if an internal error occurred. Errors are returned to the calling code.
+    ///             - Inner `Result`: Mapped to the value (`a1`) and error (`a0`) returned to the interpreted code.
+    pub fn syscall<F, E>(&mut self, function: &mut F) -> Result<(), E>
     where
-        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: FnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, E>,
     {
         // Get syscall arguments
         let (nr, args, memory) = self.syscall_arguments();
 
         // Call the syscall function
-        let result = function(nr, args, memory);
+        let result = function(nr, args, memory)?;
 
         // Set the syscall result
         self.syscall_result(result);
+
+        Ok(())
     }
 
     /// Handle a system call asynchronously.
@@ -255,20 +259,24 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     ///         - `Memory`: System Memory (code + RAM).
     ///
     ///     - Returns:
-    ///         - `Result<i32, NonZeroI32>`: value (`a1`), error (`a0`).
+    ///         - `Result<Result<i32, NonZeroI32>, E>`:
+    ///             - Outer `Result`: Ok(()) if the syscall was successful, Err(E) if an internal error occurred. Errors are returned to the calling code.
+    ///             - Inner `Result`: Mapped to the value (`a1`) and error (`a0`) returned to the interpreted code.
     #[cfg(feature = "async")]
-    pub async fn syscall_async<F>(&mut self, function: &mut F)
+    pub async fn syscall_async<F, E>(&mut self, function: &mut F) -> Result<(), E>
     where
-        F: AsyncFnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<i32, NonZeroI32>,
+        F: AsyncFnMut(i32, &[i32; SYSCALL_ARGS], &mut M) -> Result<Result<i32, NonZeroI32>, E>,
     {
         // Get syscall arguments
         let (nr, args, memory) = self.syscall_arguments();
 
         // Call the syscall function
-        let result = function(nr, args, memory).await;
+        let result = function(nr, args, memory).await?;
 
         // Set the syscall result
         self.syscall_result(result);
+
+        Ok(())
     }
 }
 
@@ -284,9 +292,9 @@ mod tests {
         nr: i32,
         args: &[i32; SYSCALL_ARGS],
         _memory: &mut SliceMemory<'_>,
-    ) -> Result<i32, NonZeroI32> {
+    ) -> Result<Result<i32, NonZeroI32>, Error> {
         // Match the syscall number
-        match nr {
+        Ok(match nr {
             0 => Ok(0),
             1 => {
                 // Check all 7 arguments
@@ -304,7 +312,7 @@ mod tests {
                 }
             }
             _ => Err(1.try_into().unwrap()), // Not implemented
-        }
+        })
     }
 
     #[test]
@@ -328,7 +336,7 @@ mod tests {
 
         // Host Called (syscall)
         assert_eq!(state, State::Called);
-        interpreter.syscall(&mut syscall);
+        interpreter.syscall(&mut syscall).unwrap();
 
         // Check the result (Ok(0))
         assert_eq!(
@@ -370,7 +378,7 @@ mod tests {
 
         // Host Called (syscall)
         assert_eq!(state, State::Called);
-        interpreter.syscall(&mut syscall);
+        interpreter.syscall(&mut syscall).unwrap();
 
         // Check the result (Err(1))
         assert_eq!(
@@ -419,7 +427,7 @@ mod tests {
 
         // Host Called (syscall)
         assert_eq!(state, State::Called);
-        interpreter.syscall(&mut syscall);
+        interpreter.syscall(&mut syscall).unwrap();
 
         // Check the result (Ok(-1))
         assert_eq!(
@@ -469,7 +477,7 @@ mod tests {
 
         // Host Called (syscall)
         assert_eq!(state, State::Called);
-        interpreter.syscall(&mut syscall);
+        interpreter.syscall(&mut syscall).unwrap();
 
         // Check the result (Err(-1))
         assert_eq!(
