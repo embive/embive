@@ -172,7 +172,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Interpreter state after debugging ended
-    let interpreter: Interpreter<'_, SliceMemory> = debugger.into();
+    let mut interpreter: Interpreter<'_, SliceMemory> = debugger.into();
     println!("");
     println!("Interpreter State:");
     println!("Registers: {:?}", interpreter.registers.cpu);

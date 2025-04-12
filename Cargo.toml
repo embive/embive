@@ -23,6 +23,7 @@ transpiler = ["dep:elf"]
 interpreter = []
 async = []
 debugger = ["dep:gdbstub", "dep:gdbstub_arch", "interpreter"]
+alloc = []
 
 [workspace]
 members = ["examples/embassy", "fuzz"]
@@ -34,6 +35,4 @@ rustdoc-args = ["--cfg", "docsrs"]
 [[example]]
 name = "gdb_tcp"
 path = "examples/gdb_tcp.rs"
-required-features = ["debugger"]
-
-
+required-features = ["debugger", "transpiler"]

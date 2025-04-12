@@ -1,4 +1,7 @@
 //! Interpreter Module
+//!
+//! This module contains the Embive interpreter, which is responsible for executing the interpreted code.
+//! It uses the Embive instruction set and provides a simple interface for running and debugging the code.
 mod config;
 #[cfg(feature = "debugger")]
 mod debugger;
@@ -133,7 +136,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     /// - `Ok(Instruction)`: The instruction that was fetched.
     /// - `Err(Error)`: The program counter is out of bounds.
     #[inline(always)]
-    pub fn fetch(&self) -> Result<Instruction, Error> {
+    pub fn fetch(&mut self) -> Result<Instruction, Error> {
         let data = self.memory.load(self.program_counter, 4)?;
         // Unwrap is safe because the slice is guaranteed to have 4 elements.
         Ok(u32::from_le_bytes(data.try_into().unwrap()).into())
@@ -282,12 +285,16 @@ impl<'a, M: Memory> Interpreter<'a, M> {
 
 #[cfg(test)]
 mod tests {
-    use crate::transpiler::transpile_raw;
-
-    use super::*;
+    #[cfg(feature = "transpiler")]
     use core::num::NonZeroI32;
     use memory::SliceMemory;
 
+    #[cfg(feature = "transpiler")]
+    use crate::transpiler::transpile_raw;
+
+    use super::*;
+
+    #[cfg(feature = "transpiler")]
     fn syscall(
         nr: i32,
         args: &[i32; SYSCALL_ARGS],
@@ -315,6 +322,7 @@ mod tests {
         })
     }
 
+    #[cfg(feature = "transpiler")]
     #[test]
     fn test_syscall() {
         let mut code = [
@@ -357,6 +365,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "transpiler")]
     #[test]
     fn test_syscall_error() {
         let mut code = [
@@ -399,6 +408,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "transpiler")]
     #[test]
     fn test_syscall_args() {
         let mut code = [
@@ -448,6 +458,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "transpiler")]
     #[test]
     fn test_syscall_args_error() {
         let mut code = [
@@ -507,6 +518,7 @@ mod tests {
         assert_eq!(interpreter.program_counter, 0);
     }
 
+    #[cfg(feature = "transpiler")]
     #[test]
     fn test_instruction_limit() {
         let mut code = [
@@ -537,6 +549,7 @@ mod tests {
         assert_eq!(interpreter.program_counter, 4 * 4);
     }
 
+    #[cfg(feature = "transpiler")]
     #[test]
     fn test_instruction_limit_zero() {
         let mut code = [
@@ -562,6 +575,7 @@ mod tests {
         assert_eq!(interpreter.program_counter, 4 * 4);
     }
 
+    #[cfg(feature = "transpiler")]
     #[test]
     fn test_interrupt() {
         let mut code = [

@@ -2,19 +2,19 @@
 
 use core::fmt::{Display, Formatter, Result};
 
-use elf::ParseError;
+use elf::{compression::CompressionHeader, ParseError};
 
-/// Embive Error
+/// Embive Transpiler Error
 #[derive(Debug)]
 pub enum Error {
     /// Error parsing ELF.
     ErrorParsingELF(ParseError),
     /// Section does not have a segment. The section index is provided.
     NoSegmentForSection(usize),
-    /// Missing section data in the ELF. The section index is provided.
-    MissingSectionData(usize),
     /// Invalid instruction. The instruction is provided.
     InvalidInstruction(u32),
+    /// Invalid instruction size. The size is provided.
+    InvalidInstructionSize(usize),
     /// Invalid platform (not a RISC-V 32-bit ELF).
     InvalidPlatform,
     /// ELF has no section header table.
@@ -23,6 +23,8 @@ pub enum Error {
     NoProgramHeader,
     /// Buffer is too small.
     BufferTooSmall,
+    /// Unsupported ELF Compression
+    UnsupportedCompression(CompressionHeader),
 }
 
 impl core::error::Error for Error {}

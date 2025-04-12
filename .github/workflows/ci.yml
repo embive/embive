@@ -43,6 +43,10 @@ jobs:
         run: cargo clippy --all-features -- -D warnings
       - name: Build without features
         run: cargo build --verbose --no-default-features
+      - name: Build with only interpreter
+        run: cargo build --verbose --no-default-features --features interpreter
+      - name: Build with only transpiler
+        run: cargo build --verbose --no-default-features --features transpiler
       - name: GDB Example
         run: cargo build --verbose --example gdb_tcp --features debugger
       - name: Embassy Example

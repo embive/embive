@@ -1,12 +1,17 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md"))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(all(feature = "interpreter", feature = "transpiler"), doc = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/README.md")))]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/embive/embive/6da108bce7d0d01ac15ccb78786b68310c83289e/assets/embive_logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/embive/embive/6da108bce7d0d01ac15ccb78786b68310c83289e/assets/embive_logo.svg"
 )]
+//!
 #![warn(missing_docs, rust_2018_idioms, future_incompatible, keyword_idents)]
 #![deny(unsafe_code)]
+
+#[cfg(all(feature = "alloc", feature = "transpiler"))]
+extern crate alloc;
 
 mod format;
 pub mod instruction;

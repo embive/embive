@@ -2,7 +2,7 @@
 
 use core::fmt::{Display, Formatter, Result};
 
-/// Embive Error
+/// Embive Interpreter Error
 #[derive(Debug, PartialEq)]
 pub enum Error {
     /// Memory address is out of bounds. The memory address is provided.

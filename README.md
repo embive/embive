@@ -7,16 +7,20 @@
 [msrv]: https://img.shields.io/crates/msrv/embive.svg?label=msrv&color=lightgray
 [Rust 1.81]: https://blog.rust-lang.org/2024/09/05/Rust-1.81.0.html
 
-A lightweight, recoverable sandbox for executing untrusted RISC-V code in constrained environments (ex.: microcontrollers).  
+A lightweight, recoverable sandbox for executing untrusted RISC-V code in constrained environments (ex.: microcontrollers).
 
 🛡️ **Secure**: No unsafe code, no panics on release builds.  
 📦 **Embeddable**: No standard library required.  
-⚡ **Deterministic**: No heap allocation required.
+⚡ **Deterministic**: No heap allocation required.  
+
+This project has a similar use-case as [WebAssembly](https://webassembly.org/) or [Q3VM](https://www.icculus.org/~phaethon/q3mc/q3vm_specs.html):
+Allow compiled code to be dinamically loaded by a host application, while also restricting memory access and resource usage.  
 
 ## How It Works
 
-Embive supports RISC-V `RV32IMAC` instruction-set and uses a two-stage execution model:
+Embive supports the RISC-V `RV32IMAC` instruction-set, making it compatible with many languages and toolchains available.
 
+For better performance on smaller devices, it has a two-stage execution model:
 1. Transpilation ([more info. here](TRANSPILER.md))  
    Converts RISC-V ELF file to an optimized bytecode binary:
     - Reorder immediates
@@ -28,7 +32,8 @@ Embive supports RISC-V `RV32IMAC` instruction-set and uses a two-stage execution
     - Syscall and interruption support
     - Instruction limiting
 
-The transpiled bytecode is stable and can be executed by any device running the Embive interpreter. 
+The transpiled bytecode is stable and can be executed by any device running the Embive interpreter.
+As such, the transpilation can even be done ahead-of-time and by a different machine.
 
 ## Languages
 
@@ -55,7 +60,10 @@ use embive::{
     transpiler::transpile_elf,
 };
 
-// RISC-V code to transpile and execute
+// RISC-V code to be transpiled and executed.
+// The default code will execute the syscalls implemented
+// bellow, loading values from RAM and adding them.
+// Check the available Embive templates for more info.
 const ELF_FILE: &[u8] = include_bytes!(
     concat!(env!("CARGO_MANIFEST_DIR"), "/tests/app.elf")
 );
@@ -66,8 +74,8 @@ fn syscall<M: Memory>(
     args: &[i32; SYSCALL_ARGS],
     memory: &mut M,
 ) -> Result<Result<i32, NonZeroI32>, Error> {
-    // Match the syscall number (always succeeds)
-    Ok(match nr {
+    // Match the syscall number
+    let ret = match nr {
         // Add two numbers (arg[0] + arg[1])
         1 => Ok(args[0] + args[1]),
         // Load from RAM (arg[0])
@@ -76,7 +84,11 @@ fn syscall<M: Memory>(
             Err(_) => Err(1.try_into().unwrap()), // Error loading
         },
         _ => Err(2.try_into().unwrap()), // Not implemented
-    })
+    };
+
+    // Outer Result is returned to the host (interpreter)
+    // Inner result is returned to the guest code
+    Ok(ret) // No host error
 }
 
 fn main() {
@@ -92,25 +104,29 @@ fn main() {
     // Create memory from code and RAM slices
     let mut memory = SliceMemory::new(&code, &mut ram);
 
-    // Create interpreter config
+    // Create interpreter config with instruction limit
     let config = Config::default()
         .with_instruction_limit(10);
 
     // Create interpreter
     let mut interpreter = Interpreter::new(&mut memory, config);
 
-    // Run it until ebreak, triggering an interrupt after every wfi
+    // Run the interpreter, handling all possible states
     loop {
         match interpreter.run().unwrap() {
-            State::Running => {}
+            // Keep running after reaching instruction limit
+            State::Running => {},
+            // Handle syscall if called by guest code
             State::Called => interpreter.syscall(&mut syscall).unwrap(),
+            // Trigger an interrupt right-away if guest is waiting for it
             State::Waiting => interpreter.interrupt().unwrap(),
+            // Stop if guest code exited
             State::Halted => break,
         }
     }
 
     // Code does "10 + 20" using syscalls (load from ram and add numbers)
-    // Check the result (Ok(30)) (A0 = 0, A1 = 30)
+    // Check the result (Ok(30)) (Registers: A0 = 0, A1 = 30)
     assert_eq!(
         interpreter
             .registers
@@ -130,26 +146,43 @@ fn main() {
 }
 ```
 
+## Instruction Limiting
+
+In many cases, it is desirable to pause the guest after a number of instruction have been executed.
+
+This can not only restrict the guest from using all the machine resources, but also allows the host
+to execute other periodic tasks without relying on threading.
+
+You can read more about instruction limiting in the `interpreter::Config` documentation.
+
 ## System Calls
 
-System calls are a way for the interpreted code to interact with the host environment.
-If provided, the system call function will be called when a `ecall` instruction is executed.
+System calls are a way for the interpreted code to interact with the host environment.  
+
+When an `ecall` instruction is executed, the interpreter will return the state `Called` and
+the host can then handle the syscall.  
+
 You can read more about system calls in the `interpreter::Engine::syscall` documentation.
 
 ## Interrupts
 
-Embive allows interrupts on the interpreted code to be triggered by the host. This is a complement to system calls,
-allowing asynchronous half-duplex communication between the host and the interpreted code.
+Interrupts can be trigged on the guest code by the host. This is a complement to system calls,
+allowing asynchronous half-duplex communication between the host and guest.  
+
+When a `wfi` instruction is executed, the interpreter will return the state `Waiting`, meaning
+that the guest has expressed that it is waiting for an interrupt to be triggered.  
+
 You can read more about interrupts in the `interpreter::Engine::interrupt` documentation.
 
 ## Features
 
-| Feature       | Default | Description                         | MSRV | Dependencies |
-|---------------|---------|-------------------------------------|------|--------------|
-| `transpiler`  | ✅     | ELF-to-bytecode conversion          | 1.81 | [elf](https://docs.rs/elf/latest/elf/)        |
-| `interpreter` | ✅     | Execution engine                    | 1.81 | None         |
-| `debugger`    | ❌     | GDB Debugger                        | 1.81 | [gdbstub](https://github.com/daniel5151/gdbstub) & [gdbstub_arch](https://github.com/daniel5151/gdbstub) |
-| `async`       | ❌     | Asynchronous syscall handling       | 1.85 | None         |
+| Feature       | Default | Description                             | MSRV | Dependencies |
+|---------------|---------|-----------------------------------------|------|--------------|
+| `transpiler`  | ✅     | ELF-to-bytecode converter               | 1.81 | [elf](https://docs.rs/elf/latest/elf/)        |
+| `interpreter` | ✅     | Execution engine                        | 1.81 | None         |
+| `debugger`    | ❌     | Implement GDB Debugger for interpreter  | 1.81 | [gdbstub](https://github.com/daniel5151/gdbstub), [gdbstub_arch](https://github.com/daniel5151/gdbstub) |
+| `alloc`       | ❌     | Transpilation without static buffer     | 1.81 | None         |
+| `async`       | ❌     | Asynchronous syscall handling           | 1.85 | None         |
 
 ## Supported RISC-V Extensions
 
@@ -164,7 +197,7 @@ You can read more about interrupts in the `interpreter::Engine::interrupt` docum
 
 ## What about Floating Point?
 
-Rust doesn't support custom rounding modes nor does it expose the IEEE exception flags. As such,
+Rust doesn't support custom rounding modes nor does it expose the IEEE exception flags. Hence,
 fully implementing the RISC-V F and/or D extensions would require a soft-float library.  
 
 As at the time Embive was created no soft-float library satisfied my requirements (portable, safe, no_std, and complete),
