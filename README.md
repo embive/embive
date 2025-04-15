@@ -13,14 +13,14 @@ A lightweight, recoverable sandbox for executing untrusted RISC-V code in constr
 📦 **Embeddable**: No standard library required.  
 ⚡ **Deterministic**: No heap allocation required.  
 
-This project has a similar use-case as [WebAssembly](https://webassembly.org/) or [Q3VM](https://www.icculus.org/~phaethon/q3mc/q3vm_specs.html):
+This library was inspired by [WebAssembly](https://webassembly.org/) and [Q3VM](https://www.icculus.org/~phaethon/q3mc/q3vm_specs.html):
 Allow compiled code to be dinamically loaded by a host application, while also restricting memory access and resource usage.  
 
 ## How It Works
 
-Embive supports the RISC-V `RV32IMAC` instruction-set, making it compatible with many languages and toolchains available.
+Embive supports the RISC-V `RV32IMAC` instruction-set, making it compatible with many available languages and toolchains.
 
-For better performance on smaller devices, it has a two-stage execution model:
+For better performance at the target device, Embive uses a two-stage execution model:
 1. Transpilation ([more info. here](TRANSPILER.md))  
    Converts RISC-V ELF file to an optimized bytecode binary:
     - Reorder immediates
