@@ -20,7 +20,7 @@ use core::ops::DerefMut;
 use alloc::vec::Vec;
 
 use elf::{
-    abi::{SHF_ALLOC, SHF_EXECINSTR, SHT_PROGBITS},
+    abi::{EM_RISCV, SHF_ALLOC, SHF_EXECINSTR, SHT_PROGBITS},
     endian::LittleEndian,
     file::Class,
     ElfBytes,
@@ -30,8 +30,6 @@ use elf::{
 pub use error::Error;
 
 use convert::convert;
-
-const RISCV_MACHINE: u16 = 0xF3;
 
 /// Transpile raw RISC-V instructions to Embive instructions.
 ///
@@ -93,7 +91,7 @@ where
     let sections = elf_bytes.section_headers().ok_or(Error::NoSectionHeader)?;
 
     // Check if the ELF is a RISC-V 32-bit ELF
-    if elf_bytes.ehdr.e_machine != RISCV_MACHINE || elf_bytes.ehdr.class != Class::ELF32 {
+    if elf_bytes.ehdr.e_machine != EM_RISCV || elf_bytes.ehdr.class != Class::ELF32 {
         return Err(Error::InvalidPlatform);
     }
 
