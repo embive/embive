@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_jal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let jal = TypeJ { rd: 1, imm: 0x1000 };
 

@@ -31,7 +31,7 @@ mod tests {
     use crate::{
         interpreter::{
             memory::{SliceMemory, RAM_OFFSET},
-            Config, Error, Interpreter, State, SYSCALL_ARGS,
+            Error, Interpreter, State, SYSCALL_ARGS,
         },
         transpiler::transpile_elf,
     };
@@ -78,12 +78,7 @@ mod tests {
         let mut memory = SliceMemory::new(code, &mut ram);
 
         // Create interpreter
-        let mut interpreter = Interpreter::new(
-            &mut memory,
-            Config {
-                ..Default::default()
-            },
-        );
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         // Set program counter to RAM (code start)
         interpreter.program_counter = RAM_OFFSET;

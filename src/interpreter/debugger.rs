@@ -68,7 +68,7 @@ impl<
     /// Create a new debugger for the given memory and syscall function.
     pub fn new(memory: &'a mut M, syscall_fn: F) -> Self {
         Self {
-            interpreter: Interpreter::new(memory, super::Config::default()),
+            interpreter: Interpreter::new(memory, 0),
             breakpoints: [None; N],
             exec_mode: ExecMode::Run,
             syscall_fn,

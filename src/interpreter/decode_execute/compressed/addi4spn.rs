@@ -40,7 +40,7 @@ mod tests {
     #[test]
     fn test_caddi4spn() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         *interpreter
             .registers
             .cpu
@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn test_illegal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let caddi4spn = TypeCIW { rd: 10, imm: 0x0 };
 
         let result = CAddi4spn::decode(caddi4spn.to_embive()).execute(&mut interpreter);

@@ -43,7 +43,7 @@ mod tests {
         let mut ram = [0x0; 8];
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let swsp = TypeCSS { rs2: 1, imm: 0x4 };
 
         *interpreter

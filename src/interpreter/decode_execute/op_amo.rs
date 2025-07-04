@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn test_rd_0() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 0,
             rs1: 2,
@@ -201,7 +201,7 @@ mod tests {
     #[test]
     fn test_add() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn test_add_wrapping() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -239,7 +239,7 @@ mod tests {
     #[test]
     fn test_sub() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -258,7 +258,7 @@ mod tests {
     #[test]
     fn test_sub_wrapping() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -277,7 +277,7 @@ mod tests {
     #[test]
     fn test_xor() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -297,7 +297,7 @@ mod tests {
     #[test]
     fn test_or() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -317,7 +317,7 @@ mod tests {
     #[test]
     fn test_and() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -337,7 +337,7 @@ mod tests {
     #[test]
     fn test_sll() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -357,7 +357,7 @@ mod tests {
     #[test]
     fn test_srl() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn test_srl_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -397,7 +397,7 @@ mod tests {
     #[test]
     fn test_sra() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -417,7 +417,7 @@ mod tests {
     #[test]
     fn test_sra_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -440,7 +440,7 @@ mod tests {
     #[test]
     fn test_slt_lower() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -460,7 +460,7 @@ mod tests {
     #[test]
     fn test_slt_greater() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -480,7 +480,7 @@ mod tests {
     #[test]
     fn test_slt_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -500,7 +500,7 @@ mod tests {
     #[test]
     fn test_slt_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -520,7 +520,7 @@ mod tests {
     #[test]
     fn test_sltu_lower() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -540,7 +540,7 @@ mod tests {
     #[test]
     fn test_sltu_greater() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -560,7 +560,7 @@ mod tests {
     #[test]
     fn test_sltu_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -580,7 +580,7 @@ mod tests {
     #[test]
     fn test_sltu_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -600,7 +600,7 @@ mod tests {
     #[test]
     fn test_mul() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -619,7 +619,7 @@ mod tests {
     #[test]
     fn test_mul_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -638,7 +638,7 @@ mod tests {
     #[test]
     fn test_mulh() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -660,7 +660,7 @@ mod tests {
     #[test]
     fn test_mulhsu() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -682,7 +682,7 @@ mod tests {
     #[test]
     fn test_mulhsu_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -704,7 +704,7 @@ mod tests {
     #[test]
     fn test_mulhu() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -726,7 +726,7 @@ mod tests {
     #[test]
     fn test_div() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -745,7 +745,7 @@ mod tests {
     #[test]
     fn test_div_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -764,7 +764,7 @@ mod tests {
     #[test]
     fn test_divu() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -786,7 +786,7 @@ mod tests {
     #[test]
     fn test_rem() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -805,7 +805,7 @@ mod tests {
     #[test]
     fn test_rem_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -824,7 +824,7 @@ mod tests {
     #[test]
     fn test_remu() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let op = TypeR {
             rd: 1,
             rs1: 2,
@@ -845,7 +845,7 @@ mod tests {
         let mut ram = 14i32.to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -869,7 +869,7 @@ mod tests {
         let mut ram = 14i32.to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -893,7 +893,7 @@ mod tests {
         let mut ram = 14i32.to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -917,7 +917,7 @@ mod tests {
         let mut ram = 14i32.to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -943,7 +943,7 @@ mod tests {
         let mut ram = 14i32.to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -967,7 +967,7 @@ mod tests {
         let mut ram = 14i32.to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -991,7 +991,7 @@ mod tests {
         let mut ram = 14i32.to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -1015,7 +1015,7 @@ mod tests {
         let mut ram = (-14_i32).to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -1039,7 +1039,7 @@ mod tests {
         let mut ram = (-14_i32).to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -1063,7 +1063,7 @@ mod tests {
         let mut ram = (-14_i32).to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,
@@ -1087,7 +1087,7 @@ mod tests {
         let mut ram = (-14_i32).to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let amo = TypeR {
             rd: 1,

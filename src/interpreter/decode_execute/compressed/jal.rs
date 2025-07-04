@@ -34,7 +34,7 @@ mod tests {
     #[test]
     fn test_cjal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let jal = TypeCJ { imm: 0xc };
 
         let result = CJal::decode(jal.to_embive()).execute(&mut interpreter);

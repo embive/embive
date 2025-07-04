@@ -35,7 +35,7 @@ mod tests {
     #[test]
     fn test_csrli() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let srli = TypeCB1 { rd_rs1: 1, imm: 3 };
 
         *interpreter.registers.cpu.get_mut(1).unwrap() = -1;

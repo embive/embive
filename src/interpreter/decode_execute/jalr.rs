@@ -39,7 +39,7 @@ mod tests {
     #[test]
     fn test_jlr_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let jalr = TypeI {
             func: 0x0,
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn test_jlr() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let jalr = TypeI {
             func: 0x0,
@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn test_jlr_same_reg() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let jalr = TypeI {
             func: 0x0,

@@ -34,7 +34,7 @@ mod tests {
     #[test]
     fn test_caddi16spn() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         *interpreter
             .registers
             .cpu

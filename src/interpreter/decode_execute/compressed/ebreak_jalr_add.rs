@@ -61,7 +61,7 @@ mod tests {
     #[test]
     fn test_cebreak() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let ebreak = TypeCR { rd_rs1: 0, rs2: 0 };
 
         let result = CEbreakJalrAdd::decode(ebreak.to_embive()).execute(&mut interpreter);
@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn test_cjalr() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let jalr = TypeCR { rd_rs1: 1, rs2: 0 };
 
         *interpreter.registers.cpu.get_mut(1).unwrap() = 4;
@@ -93,7 +93,7 @@ mod tests {
     #[test]
     fn test_cadd() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let add = TypeCR { rd_rs1: 1, rs2: 2 };
 
         *interpreter.registers.cpu.get_mut(1).unwrap() = 5;

@@ -35,7 +35,7 @@ mod tests {
     #[test]
     fn test_candi() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let andi = TypeCB2 {
             rd_rs1: 1,
             imm: 0x5,

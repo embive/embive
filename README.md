@@ -55,14 +55,14 @@ use embive::{
     interpreter::{
         memory::{Memory, SliceMemory},
         registers::CPURegister, Error,
-        Config, Interpreter, State, SYSCALL_ARGS,
+        Interpreter, State, SYSCALL_ARGS,
     },
     transpiler::transpile_elf,
 };
 
 // RISC-V code to be transpiled and executed.
 // The default code will execute the syscalls implemented
-// bellow, loading values from RAM and adding them.
+// bellow, loading values from RAM and adding them together.
 // Check the available Embive templates for more info.
 const ELF_FILE: &[u8] = include_bytes!(
     concat!(env!("CARGO_MANIFEST_DIR"), "/tests/app.elf")
@@ -104,12 +104,8 @@ fn main() {
     // Create memory from code and RAM slices
     let mut memory = SliceMemory::new(&code, &mut ram);
 
-    // Create interpreter config with instruction limit
-    let config = Config::default()
-        .with_instruction_limit(10);
-
-    // Create interpreter
-    let mut interpreter = Interpreter::new(&mut memory, config);
+    // Create interpreter with instruction limit
+    let mut interpreter = Interpreter::new(&mut memory, 10);
 
     // Run the interpreter, handling all possible states
     loop {
@@ -148,12 +144,12 @@ fn main() {
 
 ## Instruction Limiting
 
-In many cases, it is desirable to pause the guest after a number of instruction have been executed.
+In many cases, it is desirable to pause the guest after a number of instructions have been executed.
 
-This can not only restrict the guest from using all the machine resources, but also allows the host
+This can not only restrict the guest from using all the machine resources, but it also allows the host
 to execute other periodic tasks without relying on threading.
 
-You can read more about instruction limiting in the `interpreter::Config` documentation.
+You can read more about instruction limiting in the `interpreter::Engine::new` documentation.
 
 ## System Calls
 
@@ -167,7 +163,7 @@ You can read more about system calls in the `interpreter::Engine::syscall` docum
 ## Interrupts
 
 Interrupts can be trigged on the guest code by the host. This is a complement to system calls,
-allowing asynchronous half-duplex communication between the host and guest.  
+allowing asynchronous communication between the host and guest.  
 
 When a `wfi` instruction is executed, the interpreter will return the state `Waiting`, meaning
 that the guest has expressed that it is waiting for an interrupt to be triggered.  
@@ -181,7 +177,7 @@ You can read more about interrupts in the `interpreter::Engine::interrupt` docum
 | `transpiler`  | ✅     | ELF-to-bytecode converter               | 1.81 | [elf](https://docs.rs/elf/latest/elf/)        |
 | `interpreter` | ✅     | Execution engine                        | 1.81 | None         |
 | `debugger`    | ❌     | Implement GDB Debugger for interpreter  | 1.81 | [gdbstub](https://github.com/daniel5151/gdbstub), [gdbstub_arch](https://github.com/daniel5151/gdbstub) |
-| `alloc`       | ❌     | Transpilation without static buffer     | 1.81 | None         |
+| `alloc`       | ❌     | Transpilation without static buffer     | 1.81 | `alloc`      |
 | `async`       | ❌     | Asynchronous syscall handling           | 1.85 | None         |
 
 ## Supported RISC-V Extensions
@@ -204,7 +200,7 @@ As at the time Embive was created no soft-float library satisfied my requirement
 it was decided to not support the floating point extensions.  
 
 You can still use floats with Embive as the GCC/Clang compiler provides a soft-float implementation, but expect
-larger binaries and slow performance. In some cases, you can offload the floating computation to the host using
+larger binaries and lower performance. In some cases, you can offload the floating computation to the host using
 syscalls.
 
 ## Minimum supported Rust version (MSRV)

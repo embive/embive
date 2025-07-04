@@ -2,7 +2,6 @@
 //!
 //! This module contains the Embive interpreter, which is responsible for executing the interpreted code.
 //! It uses the Embive instruction set and provides a simple interface for running and debugging the code.
-mod config;
 #[cfg(feature = "debugger")]
 mod debugger;
 mod decode_execute;
@@ -17,8 +16,6 @@ use decode_execute::decode_execute;
 use memory::Memory;
 use registers::{CPURegister, Registers};
 
-#[doc(inline)]
-pub use config::Config;
 #[doc(inline)]
 pub use error::Error;
 #[doc(inline)]
@@ -46,8 +43,8 @@ pub struct Interpreter<'a, M: Memory> {
     pub registers: Registers,
     /// System Memory (code + RAM).
     pub memory: &'a mut M,
-    /// Interpreter Configuration.
-    pub config: Config,
+    /// Instruction limit (0 means no limit).
+    pub instruction_limit: u32,
     /// Memory reservation for atomic operations (addr, value).
     pub(crate) memory_reservation: Option<(u32, i32)>,
 }
@@ -57,14 +54,14 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     ///
     /// Arguments:
     /// - `memory`: System memory (code + RAM).
-    /// - `config`: Interpreter configuration.
-    pub fn new(memory: &'a mut M, config: Config) -> Self {
+    /// - `instruction_limit`: Execution will yield when the instruction limit is reached (0 means no limit).
+    pub fn new(memory: &'a mut M, instruction_limit: u32) -> Self {
         // Create the interpreter
         Interpreter {
             program_counter: 0,
             registers: Default::default(),
             memory,
-            config,
+            instruction_limit,
             memory_reservation: None,
         }
     }
@@ -86,9 +83,9 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     /// - `Err(Error)`: Failed to run.
     pub fn run(&mut self) -> Result<State, Error> {
         // Check if there is an instruction limit
-        if self.config.instruction_limit > 0 {
+        if self.instruction_limit > 0 {
             // Run the interpreter with an instruction limit
-            for _ in 0..self.config.instruction_limit {
+            for _ in 0..self.instruction_limit {
                 // Step through the program
                 let state = self.step()?;
 
@@ -338,11 +335,8 @@ mod tests {
         // Create memory from code and RAM slices
         let mut memory = SliceMemory::new(&code, &mut []);
 
-        // Create interpreter config
-        let config = Config::default();
-
         // Create interpreter & run it
-        let mut interpreter = Interpreter::new(&mut memory, config);
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let state = interpreter.run().unwrap();
 
         // Host Called (syscall)
@@ -381,11 +375,8 @@ mod tests {
         // Create memory from code and RAM slices
         let mut memory = SliceMemory::new(&code, &mut []);
 
-        // Create interpreter config
-        let config = Config::default();
-
         // Create interpreter & run it
-        let mut interpreter = Interpreter::new(&mut memory, config);
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let state = interpreter.run().unwrap();
 
         // Host Called (syscall)
@@ -431,11 +422,8 @@ mod tests {
         // Create memory from code and RAM slices
         let mut memory = SliceMemory::new(&code, &mut []);
 
-        // Create interpreter config
-        let config = Config::default();
-
         // Create interpreter & run it
-        let mut interpreter = Interpreter::new(&mut memory, config);
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let state = interpreter.run().unwrap();
 
         // Host Called (syscall)
@@ -482,11 +470,8 @@ mod tests {
         // Create memory from code and RAM slices
         let mut memory = SliceMemory::new(&code, &mut []);
 
-        // Create interpreter config
-        let config = Config::default();
-
         // Create interpreter & run it
-        let mut interpreter = Interpreter::new(&mut memory, config);
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let state = interpreter.run().unwrap();
 
         // Host Called (syscall)
@@ -515,7 +500,7 @@ mod tests {
     #[test]
     fn test_reset() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.reset();
 
         assert_eq!(interpreter.program_counter, 0);
@@ -533,13 +518,7 @@ mod tests {
         transpile_raw(&mut code).unwrap();
 
         let mut memory = SliceMemory::new(&code, &mut []);
-        let mut interpreter = Interpreter::new(
-            &mut memory,
-            Config {
-                instruction_limit: 2,
-                ..Default::default()
-            },
-        );
+        let mut interpreter = Interpreter::new(&mut memory, 2);
 
         // Run the interpreter
         let result = interpreter.run();
@@ -564,13 +543,7 @@ mod tests {
         transpile_raw(&mut code).unwrap();
 
         let mut memory = SliceMemory::new(&code, &mut []);
-        let mut interpreter = Interpreter::new(
-            &mut memory,
-            Config {
-                instruction_limit: 0,
-                ..Default::default()
-            },
-        );
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         // Run the interpreter
         let result = interpreter.run();
@@ -598,7 +571,7 @@ mod tests {
         transpile_raw(&mut code).unwrap();
 
         let mut memory = SliceMemory::new(&code, &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Config::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         // Run the interpreter
         let result = interpreter.run();
@@ -658,7 +631,7 @@ mod tests {
     #[test]
     fn test_interrupt_disabled() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         // interrupt
         let result = interpreter.interrupt(0);

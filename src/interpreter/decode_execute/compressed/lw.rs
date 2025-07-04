@@ -49,7 +49,7 @@ mod tests {
         ram[7] = 0x78;
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lw = TypeCL {
             rd_rs2: 8,
             rs1: 9,

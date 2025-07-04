@@ -37,7 +37,7 @@ mod tests {
     #[test]
     fn test_auipc() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let auipc = TypeU { rd: 1, imm: 0x1000 };
 
@@ -50,7 +50,7 @@ mod tests {
     #[test]
     fn test_auipc_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let auipc = TypeU {
             rd: 1,

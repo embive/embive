@@ -26,7 +26,7 @@ mod tests {
     #[test]
     fn test_cj() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let jal = TypeCJ { imm: 0xc };
 
         let result = CJ::decode(jal.to_embive()).execute(&mut interpreter);

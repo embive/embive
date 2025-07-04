@@ -94,13 +94,13 @@ mod tests {
     use crate::{
         format::{Format, TypeI},
         instruction::embive::InstructionImpl,
-        interpreter::{memory::SliceMemory, Config},
+        interpreter::memory::SliceMemory,
     };
 
     #[test]
     fn test_ebreak() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let misc_mem = TypeI {
             rd_rs2: 0,
             rs1: 0,
@@ -117,12 +117,7 @@ mod tests {
     fn test_ecall() {
         let mut ram = [0; 4];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(
-            &mut memory,
-            Config {
-                ..Default::default()
-            },
-        );
+        let mut interpreter = Interpreter::new(&mut memory, 0);
 
         let misc_mem = TypeI {
             rd_rs2: 0,
@@ -139,7 +134,7 @@ mod tests {
     #[test]
     fn test_wfi() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let misc_mem = TypeI {
             rd_rs2: 0,
             rs1: 0,
@@ -155,7 +150,7 @@ mod tests {
     #[test]
     fn test_mret() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter
             .registers
             .control_status
@@ -177,7 +172,7 @@ mod tests {
     #[test]
     fn test_fencei() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let misc_mem = TypeI {
             rd_rs2: 0,
             rs1: 0,
@@ -193,7 +188,7 @@ mod tests {
     #[test]
     fn test_csrrw() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         *interpreter.registers.cpu.get_mut(1).unwrap() = 0x1234;
         *interpreter.registers.cpu.get_mut(2).unwrap() = 0x1234;
 
@@ -220,7 +215,7 @@ mod tests {
     #[test]
     fn test_csrrs() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter
             .registers
             .control_status
@@ -253,7 +248,7 @@ mod tests {
     #[test]
     fn test_csrrc() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter
             .registers
             .control_status
@@ -286,7 +281,7 @@ mod tests {
     #[test]
     fn test_csrrwi() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         *interpreter.registers.cpu.get_mut(1).unwrap() = 0x1234;
 
         let csrrwi = TypeI {
@@ -312,7 +307,7 @@ mod tests {
     #[test]
     fn test_csrrsi() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter
             .registers
             .control_status
@@ -344,7 +339,7 @@ mod tests {
     #[test]
     fn test_csrrci() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter
             .registers
             .control_status

@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn test_addi() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let addi = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn test_addi_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let addi = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -93,7 +93,7 @@ mod tests {
     #[test]
     fn test_xori() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let xori = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -111,7 +111,7 @@ mod tests {
     #[test]
     fn test_xori_not() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let xori = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -129,7 +129,7 @@ mod tests {
     #[test]
     fn test_ori() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let ori = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -150,7 +150,7 @@ mod tests {
     #[test]
     fn test_ori_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let ori = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn test_andi() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let andi = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -192,7 +192,7 @@ mod tests {
     #[test]
     fn test_slli() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let slli = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -213,7 +213,7 @@ mod tests {
     #[test]
     fn test_srli() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let srli = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -234,7 +234,7 @@ mod tests {
     #[test]
     fn test_srai() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let srai = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -255,7 +255,7 @@ mod tests {
     #[test]
     fn test_slti_lower() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let slti = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -273,7 +273,7 @@ mod tests {
     #[test]
     fn test_slti_greater() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let slti = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -291,7 +291,7 @@ mod tests {
     #[test]
     fn test_slti_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let slti = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -309,7 +309,7 @@ mod tests {
     #[test]
     fn test_slti_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let slti = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -327,7 +327,7 @@ mod tests {
     #[test]
     fn test_sltiu_lower() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let sltiu = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -345,7 +345,7 @@ mod tests {
     #[test]
     fn test_sltiu_greater() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let sltiu = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -363,7 +363,7 @@ mod tests {
     #[test]
     fn test_sltiu_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let sltiu = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -381,7 +381,7 @@ mod tests {
     #[test]
     fn test_sltiu_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let sltiu = TypeI {
             rd_rs2: 1,
             rs1: 2,

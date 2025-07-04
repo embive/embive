@@ -4,7 +4,7 @@ use libfuzzer_sys::fuzz_target;
 
 use embive::interpreter::{
     memory::{Memory, SliceMemory},
-    Config, Interpreter, State, SYSCALL_ARGS,
+    Interpreter, State, SYSCALL_ARGS,
 };
 
 const MAX_INSTRUCTIONS: u32 = 2048;
@@ -21,8 +21,7 @@ fn syscall<M: Memory>(
 fuzz_target!(|data: &[u8]| {
     let mut ram = [0; RAM_SIZE];
     let mut memory = SliceMemory::new(&data, &mut ram);
-    let config = Config::default().with_instruction_limit(MAX_INSTRUCTIONS);
-    let mut interpreter = Interpreter::new(&mut memory, config);
+    let mut interpreter = Interpreter::new(&mut memory, MAX_INSTRUCTIONS);
 
     loop {
         match interpreter.run() {

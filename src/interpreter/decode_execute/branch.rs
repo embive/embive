@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn test_beq_negative() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: -0x100,
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn test_beq_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn test_beq_not_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -107,7 +107,7 @@ mod tests {
     #[test]
     fn test_bne_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn test_bne_not_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn test_blt_less_than() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn test_blt_greater_than() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn test_bge_greater_than() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn test_bge_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn test_bge_less_than() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -246,7 +246,7 @@ mod tests {
     #[test]
     fn test_bltu_less_than() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -266,7 +266,7 @@ mod tests {
     #[test]
     fn test_bltu_greater_than() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -286,7 +286,7 @@ mod tests {
     #[test]
     fn test_bgeu_greater_than() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -306,7 +306,7 @@ mod tests {
     #[test]
     fn test_bgeu_equal() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,
@@ -326,7 +326,7 @@ mod tests {
     #[test]
     fn test_bgeu_less_than() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         interpreter.program_counter = 0x1;
         let branch = TypeB {
             imm: 0x100,

@@ -35,7 +35,7 @@ mod tests {
     #[test]
     fn test_cneqz() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let bnez = TypeCB4 { imm: 0x4, rs1: 8 };
 
         *interpreter.registers.cpu.get_mut(8).unwrap() = 0x1;
@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn test_cneqz_zero() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let bnez = TypeCB4 { imm: 0x4, rs1: 8 };
 
         let result = CBnez::decode(bnez.to_embive()).execute(&mut interpreter);

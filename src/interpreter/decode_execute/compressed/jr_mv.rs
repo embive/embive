@@ -42,7 +42,7 @@ mod tests {
     #[test]
     fn test_cjr() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let jr = TypeCR { rd_rs1: 1, rs2: 0 };
 
         *interpreter.registers.cpu.get_mut(1).unwrap() = 4;
@@ -55,7 +55,7 @@ mod tests {
     #[test]
     fn test_cmv() {
         let mut memory = SliceMemory::new(&[], &mut []);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let mv = TypeCR { rd_rs1: 1, rs2: 2 };
 
         *interpreter.registers.cpu.get_mut(2).unwrap() = 4;

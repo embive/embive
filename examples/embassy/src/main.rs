@@ -7,7 +7,7 @@ use embive::{
     interpreter::{
         memory::{Memory, SliceMemory},
         registers::CPURegister,
-        Config, Interpreter, State, SYSCALL_ARGS,
+        Interpreter, State, SYSCALL_ARGS,
     },
     transpiler::transpile_elf,
 };
@@ -67,11 +67,8 @@ async fn main(spawner: Spawner) {
     // Create memory from code and RAM slices
     let mut memory = SliceMemory::new(&code, &mut ram);
 
-    // Create interpreter config
-    let config = Config::default().with_instruction_limit(10);
-
     // Create interpreter
-    let mut interpreter = Interpreter::new(&mut memory, config);
+    let mut interpreter = Interpreter::new(&mut memory, 10);
 
     // Run it until ebreak, triggering an interrupt after every wfi
     loop {

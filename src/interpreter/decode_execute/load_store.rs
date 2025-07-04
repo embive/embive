@@ -105,7 +105,7 @@ mod tests {
         ram[1] = 0x12;
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lb = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -126,7 +126,7 @@ mod tests {
         ram[1] = -0x12i8 as u8;
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lb = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -148,7 +148,7 @@ mod tests {
         ram[2] = 0x34;
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lh = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -168,7 +168,7 @@ mod tests {
         let mut ram = (-28098i16).to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lh = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -192,7 +192,7 @@ mod tests {
         ram[4] = 0x78;
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lw = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -212,7 +212,7 @@ mod tests {
         let mut ram = (-19088744i32).to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lw = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -233,7 +233,7 @@ mod tests {
         ram[1] = 0x12;
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lbu = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -254,7 +254,7 @@ mod tests {
         ram[1] = -0x12i8 as u8;
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lbu = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -279,7 +279,7 @@ mod tests {
         ram[2] = 0x34;
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lhu = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -299,7 +299,7 @@ mod tests {
         let mut ram = (-28098i16).to_le_bytes();
 
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let lhu = TypeI {
             rd_rs2: 1,
             rs1: 2,
@@ -321,7 +321,7 @@ mod tests {
     fn test_sb() {
         let mut ram = [0; 2];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let store = TypeI {
             imm: 0x1,
             func: LoadStore::SB_FUNC,
@@ -342,7 +342,7 @@ mod tests {
     fn test_sh() {
         let mut ram = [0; 4];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let store = TypeI {
             imm: 0x2,
             func: LoadStore::SH_FUNC,
@@ -363,7 +363,7 @@ mod tests {
     fn test_sw() {
         let mut ram = [0; 4];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let mut interpreter = Interpreter::new(&mut memory, Default::default());
+        let mut interpreter = Interpreter::new(&mut memory, 0);
         let store = TypeI {
             imm: 0x0,
             func: LoadStore::SW_FUNC,
