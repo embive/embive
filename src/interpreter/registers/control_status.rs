@@ -108,6 +108,8 @@ pub struct CSRegisters {
     mepc: u32,
     /// Machine Cause Register
     mcause: u32,
+    /// Machine Trap Value Register
+    mtval: i32,
     /// Machine Interrupt Enable (bit [`crate::interpreter::EMBIVE_INTERRUPT_CODE`])
     mie_embive: bool,
     /// Machine Interrupt Pending (bit [`crate::interpreter::EMBIVE_INTERRUPT_CODE`])
@@ -144,28 +146,32 @@ impl CSRegisters {
             MTVEC_ADDR => {
                 let ret = self.mtvec;
                 // We only support direct mode right now
-                self.mtvec = execute_operation(op, self.mtvec) & !MTVEC_MODE;
+                self.mtvec = execute_operation(op, ret) & !MTVEC_MODE;
                 Ok(ret)
             }
             MSTATUSH_ADDR => Ok(0), // Ignore high mstatus
             MCOUNTINHIBIT_ADDR..=MHPMEVENT31H_ADDR => Ok(0), // Ignore counters
             MSCRATCH_ADDR => {
                 let ret = self.mscratch;
-                self.mscratch = execute_operation(op, self.mscratch);
+                self.mscratch = execute_operation(op, ret);
                 Ok(ret)
             }
             MEPC_ADDR => {
                 let ret = self.mepc;
                 // Bit 0 is always 0
-                self.mepc = execute_operation(op, self.mepc) & !MEPC_BIT0;
+                self.mepc = execute_operation(op, ret) & !MEPC_BIT0;
                 Ok(ret)
             }
             MCAUSE_ADDR => {
                 let ret = self.mcause;
-                self.mcause = execute_operation(op, self.mcause);
+                self.mcause = execute_operation(op, ret);
                 Ok(ret)
             }
-            MTVAL_ADDR => Ok(0), // Ignore mtval
+            MTVAL_ADDR => {
+                let ret = self.mtval as u32;
+                self.mtval = execute_operation(op, ret) as i32;
+                Ok(ret)
+            }
             MIP_ADDR => {
                 let ret = (self.mip_embive as u32) << EMBIVE_INTERRUPT_CODE;
                 self.mip_embive = (execute_operation(op, ret) & MI_E_P_MASK) != 0;
@@ -202,11 +208,12 @@ impl CSRegisters {
     /// - Set `mcause.MEI` to 1
     /// - Set `mcause.code` to 11
     /// - Copy the received program counter to `mepc`.
+    /// - Copy the received value to `mtval`.
     /// - Update the program counter to the value in `mtvec`.
     ///
     /// Arguments:
     /// - `pc`: Mutable reference to the program counter.
-    pub(crate) fn trap_entry(&mut self, pc: &mut u32) {
+    pub(crate) fn trap_entry(&mut self, pc: &mut u32, value: i32) {
         // Copy MIE to MPIE
         if (self.mstatus & MSTATUS_MIE) != 0 {
             self.mstatus |= MSTATUS_MPIE;
@@ -222,6 +229,9 @@ impl CSRegisters {
 
         // Copy PC to MEPC
         self.mepc = *pc;
+
+        // Copy value to mtval
+        self.mtval = value;
 
         // Update PC to mtvec
         *pc = self.mtvec & !MTVEC_MODE;

@@ -32,7 +32,7 @@ fuzz_target!(|data: &[u8]| {
                 }
             }
             Ok(State::Waiting) => {
-                if let Err(_) = interpreter.interrupt() {
+                if let Err(_) = interpreter.interrupt(0) {
                     break;
                 }
             }

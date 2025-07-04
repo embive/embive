@@ -114,13 +114,13 @@ fn main() {
     // Run the interpreter, handling all possible states
     loop {
         match interpreter.run().unwrap() {
-            // Keep running after reaching instruction limit
+            // Keep running after reaching instruction limit (10)
             State::Running => {},
-            // Handle syscall if called by guest code
+            // Handle syscall if called by guest code (ECALL)
             State::Called => interpreter.syscall(&mut syscall).unwrap(),
-            // Trigger an interrupt right-away if guest is waiting for it
-            State::Waiting => interpreter.interrupt().unwrap(),
-            // Stop if guest code exited
+            // Trigger an interrupt right-away if guest is waiting (WFI)
+            State::Waiting => interpreter.interrupt(0).unwrap(),
+            // Stop if guest code exited (EBREAK)
             State::Halted => break,
         }
     }

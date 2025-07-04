@@ -152,10 +152,13 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     ///
     /// The interrupt pending (`mip`) bit [`EMBIVE_INTERRUPT_CODE`] can be cleared by manually writing 0 to it.
     ///
+    /// Arguments:
+    /// - `value`: Value to be passed to the interrupt handler (through `mtval` CSR).
+    ///
     /// Returns:
     /// - `Ok(())`: Success, interrupt executed.
     /// - `Err(Error)`: Interrupt not enabled by interpreted code.
-    pub fn interrupt(&mut self) -> Result<(), Error> {
+    pub fn interrupt(&mut self, value: i32) -> Result<(), Error> {
         // Check if interrupt is enabled
         if !self.registers.control_status.interrupt_enabled() {
             // Interrupt is not enabled
@@ -168,7 +171,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
         // Trap to the interrupt handler
         self.registers
             .control_status
-            .trap_entry(&mut self.program_counter);
+            .trap_entry(&mut self.program_counter, value);
 
         Ok(())
     }
@@ -610,7 +613,7 @@ mod tests {
         );
 
         // interrupt
-        let result = interpreter.interrupt();
+        let result = interpreter.interrupt(1024);
         assert_eq!(result, Ok(()));
         assert_eq!(interpreter.program_counter, 40);
         assert!(
@@ -621,6 +624,14 @@ mod tests {
                 .unwrap()
                 & (1 << EMBIVE_INTERRUPT_CODE)
                 != 0
+        );
+        assert_eq!(
+            interpreter
+                .registers
+                .control_status
+                .operation(None, 0x343) // MTVAL
+                .unwrap(),
+            1024
         );
 
         // Run the interpreter again
@@ -650,7 +661,7 @@ mod tests {
         let mut interpreter = Interpreter::new(&mut memory, Default::default());
 
         // interrupt
-        let result = interpreter.interrupt();
+        let result = interpreter.interrupt(0);
         assert_eq!(result, Err(Error::InterruptNotEnabled));
     }
 }

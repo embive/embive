@@ -118,7 +118,7 @@ impl<
                     .map_err(run_blocking::WaitForStopReasonError::Target)?,
                 State::Waiting => target
                     .interpreter
-                    .interrupt()
+                    .interrupt(0)
                     .map_err(run_blocking::WaitForStopReasonError::Target)?,
             }
 
