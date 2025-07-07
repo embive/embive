@@ -114,8 +114,8 @@ fn main() {
             State::Running => {},
             // Handle syscall if called by guest code (ECALL)
             State::Called => interpreter.syscall(&mut syscall).unwrap(),
-            // Trigger an interrupt right-away if guest is waiting (WFI)
-            State::Waiting => interpreter.interrupt(0).unwrap(),
+            // Interrupt (passing value = 10) if guest is waiting (WFI)
+            State::Waiting => interpreter.interrupt(10).unwrap(),
             // Stop if guest code exited (EBREAK)
             State::Halted => break,
         }
