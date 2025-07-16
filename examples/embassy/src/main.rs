@@ -79,7 +79,7 @@ async fn main(spawner: Spawner) {
                 yield_now().await;
             }
             State::Called => interpreter.syscall_async(&mut syscall).await.unwrap(),
-            State::Waiting => interpreter.interrupt(0).unwrap(),
+            State::Waiting => interpreter.interrupt(10).unwrap(),
             State::Halted => break,
         }
     }
