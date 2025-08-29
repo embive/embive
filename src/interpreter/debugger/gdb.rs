@@ -83,7 +83,7 @@ impl<
         let res = self
             .interpreter
             .memory
-            .load(start_addr, data.len() as u32)
+            .load_bytes(start_addr, data.len())
             .map_err(TargetError::Fatal)?;
         data.copy_from_slice(res);
 
@@ -97,7 +97,7 @@ impl<
     ) -> TargetResult<(), Self> {
         self.interpreter
             .memory
-            .store(start_addr, data)
+            .store_bytes(start_addr, data)
             .map_err(TargetError::Fatal)?;
 
         Ok(())

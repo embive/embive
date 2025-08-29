@@ -1,5 +1,6 @@
 use crate::instruction::embive::CSlli;
 use crate::instruction::embive::InstructionImpl;
+use crate::interpreter::utils::likely;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
 use super::super::Execute;
@@ -8,7 +9,7 @@ impl<M: Memory> Execute<M> for CSlli {
     #[inline(always)]
     fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
         // Left shift
-        if self.0.rd_rs1 != 0 {
+        if likely(self.0.rd_rs1 != 0) {
             let rs1 = interpreter.registers.cpu.get_mut(self.0.rd_rs1)?;
             *rs1 = rs1.wrapping_shl(self.0.imm as u32);
         }

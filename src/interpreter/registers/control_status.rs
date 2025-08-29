@@ -90,11 +90,11 @@ const fn get_misa() -> u32 {
 /// - MSCRATCH
 /// - MEPC
 /// - MCAUSE
+/// - MTVAL
 /// - MIP (bit [`crate::interpreter::EMBIVE_INTERRUPT_CODE`])
 ///
 /// Ignored CSRs (read-only as 0):
 /// - MSTATUSH
-/// - MTVAL
 /// - MCOUNTINHIBIT..MHPMEVENT31
 /// - MCYCLE..MHPMCOUNTER31
 /// - MVENDORID..MCONFIGPTR

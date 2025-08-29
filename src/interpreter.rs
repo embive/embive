@@ -9,6 +9,7 @@ mod error;
 pub mod memory;
 pub mod registers;
 mod state;
+mod utils;
 
 use core::num::NonZeroI32;
 
@@ -26,6 +27,7 @@ pub use state::State;
 pub use debugger::Debugger;
 
 use crate::instruction::embive::Instruction;
+use utils::{likely, unlikely};
 
 /// Embive Custom Interrupt Code
 pub const EMBIVE_INTERRUPT_CODE: u32 = 16;
@@ -83,13 +85,13 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     /// - `Err(Error)`: Failed to run.
     pub fn run(&mut self) -> Result<State, Error> {
         // Check if there is an instruction limit
-        if self.instruction_limit > 0 {
+        if likely(self.instruction_limit > 0) {
             // Run the interpreter with an instruction limit
             for _ in 0..self.instruction_limit {
                 // Step through the program
                 let state = self.step()?;
 
-                if state != State::Running {
+                if unlikely(state != State::Running) {
                     // Stop running
                     return Ok(state);
                 }
@@ -104,7 +106,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
             // Step through the program
             let state = self.step()?;
 
-            if state != State::Running {
+            if unlikely(state != State::Running) {
                 // Stop running
                 return Ok(state);
             }
@@ -134,7 +136,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     /// - `Err(Error)`: The program counter is out of bounds.
     #[inline(always)]
     pub fn fetch(&mut self) -> Result<Instruction, Error> {
-        let data = self.memory.load(self.program_counter, 4)?;
+        let data = self.memory.load_bytes(self.program_counter, 4)?;
         // Unwrap is safe because the slice is guaranteed to have 4 elements.
         Ok(u32::from_le_bytes(data.try_into().unwrap()).into())
     }
@@ -157,7 +159,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     /// - `Err(Error)`: Interrupt not enabled by interpreted code.
     pub fn interrupt(&mut self, value: i32) -> Result<(), Error> {
         // Check if interrupt is enabled
-        if !self.registers.control_status.interrupt_enabled() {
+        if unlikely(!self.registers.control_status.interrupt_enabled()) {
             // Interrupt is not enabled
             return Err(Error::InterruptNotEnabled);
         }

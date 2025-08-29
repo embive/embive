@@ -1,5 +1,6 @@
 use crate::instruction::embive::InstructionImpl;
 use crate::instruction::embive::SystemMiscMem;
+use crate::interpreter::utils::likely;
 use crate::interpreter::{memory::Memory, registers::CSOperation, Error, Interpreter, State};
 
 use super::Execute;
@@ -7,7 +8,7 @@ use super::Execute;
 impl<M: Memory> Execute<M> for SystemMiscMem {
     #[inline(always)]
     fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
-        let ret = if self.0.func == Self::MISC_FUNC {
+        let ret = if likely(self.0.func == Self::MISC_FUNC) {
             match self.0.imm {
                 Self::ECALL_IMM => Ok(State::Called),  // Syscall (ecall)
                 Self::EBREAK_IMM => Ok(State::Halted), // Halt the execution (ebreak)

@@ -12,7 +12,9 @@ impl<M: Memory> Execute<M> for CSw {
         let address = (rs1 as u32).wrapping_add(self.0.imm as u32);
 
         let rs2 = interpreter.registers.cpu.get(self.0.rd_rs2)?;
-        interpreter.memory.store(address, &rs2.to_le_bytes())?;
+        interpreter
+            .memory
+            .store_bytes(address, &rs2.to_le_bytes())?;
 
         // Go to next instruction
         interpreter.program_counter = interpreter

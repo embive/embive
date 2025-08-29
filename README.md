@@ -21,7 +21,7 @@ Allow compiled code to be dinamically loaded by a host application, while also r
 Embive supports the RISC-V `RV32IMAC` instruction-set, making it compatible with many available languages and toolchains.
 
 For better performance at the target device, Embive uses a two-stage execution model:
-1. Transpilation ([more info. here](TRANSPILER.md))  
+1. Transpilation ([more info. here](https://github.com/embive/embive/blob/master/TRANSPILER.md))  
    Converts RISC-V ELF file to an optimized bytecode binary:
     - Reorder immediates
     - Expand compressed registers wherever possible
@@ -53,7 +53,7 @@ Embive templates are available for the following languages:
 use core::num::NonZeroI32;
 use embive::{
     interpreter::{
-        memory::{Memory, SliceMemory},
+        memory::{Memory, SliceMemory, MemoryType},
         registers::CPURegister, Error,
         Interpreter, State, SYSCALL_ARGS,
     },
@@ -79,8 +79,8 @@ fn syscall<M: Memory>(
         // Add two numbers (arg[0] + arg[1])
         1 => Ok(args[0] + args[1]),
         // Load from RAM (arg[0])
-        2 => match memory.load(args[0] as u32, 4) {
-            Ok(val) => Ok(i32::from_le_bytes(val.try_into().unwrap())),
+        2 => match i32::load(memory, args[0] as u32) {
+            Ok(val) => Ok(val),
             Err(_) => Err(1.try_into().unwrap()), // Error loading
         },
         _ => Err(2.try_into().unwrap()), // Not implemented

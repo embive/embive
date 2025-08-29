@@ -13,44 +13,65 @@ impl<M: Memory> Execute<M> for LoadStore {
         match self.0.func {
             Self::LB_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 1 element.
-                let result =
-                    i8::from_le_bytes(interpreter.memory.load(address, 1)?.try_into().unwrap())
-                        as i32;
+                let result = i8::from_le_bytes(
+                    interpreter
+                        .memory
+                        .load_bytes(address, 1)?
+                        .try_into()
+                        .unwrap(),
+                ) as i32;
                 // Store the result in the destination register
                 let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
             Self::LH_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 2 elements
-                let result =
-                    i16::from_le_bytes(interpreter.memory.load(address, 2)?.try_into().unwrap())
-                        as i32;
+                let result = i16::from_le_bytes(
+                    interpreter
+                        .memory
+                        .load_bytes(address, 2)?
+                        .try_into()
+                        .unwrap(),
+                ) as i32;
                 // Store the result in the destination register
                 let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
             Self::LW_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 4 elements
-                let result =
-                    i32::from_le_bytes(interpreter.memory.load(address, 4)?.try_into().unwrap());
+                let result = i32::from_le_bytes(
+                    interpreter
+                        .memory
+                        .load_bytes(address, 4)?
+                        .try_into()
+                        .unwrap(),
+                );
                 // Store the result in the destination register
                 let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
             Self::LBU_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 1 element.
-                let result =
-                    u8::from_le_bytes(interpreter.memory.load(address, 1)?.try_into().unwrap())
-                        as i32;
+                let result = u8::from_le_bytes(
+                    interpreter
+                        .memory
+                        .load_bytes(address, 1)?
+                        .try_into()
+                        .unwrap(),
+                ) as i32;
                 // Store the result in the destination register
                 let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
             }
             Self::LHU_FUNC => {
                 // Unwrap is safe because the slice is guaranteed to have 2 elements
-                let result =
-                    u16::from_le_bytes(interpreter.memory.load(address, 2)?.try_into().unwrap())
-                        as i32;
+                let result = u16::from_le_bytes(
+                    interpreter
+                        .memory
+                        .load_bytes(address, 2)?
+                        .try_into()
+                        .unwrap(),
+                ) as i32;
                 // Store the result in the destination register
                 let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
                 *rd = result;
@@ -60,19 +81,21 @@ impl<M: Memory> Execute<M> for LoadStore {
                 let rs2 = interpreter.registers.cpu.get(self.0.rd_rs2)?;
                 interpreter
                     .memory
-                    .store(address, &(rs2 as u8).to_le_bytes())?;
+                    .store_bytes(address, &(rs2 as u8).to_le_bytes())?;
             }
             Self::SH_FUNC => {
                 let address = (rs1 as u32).wrapping_add_signed(self.0.imm);
                 let rs2 = interpreter.registers.cpu.get(self.0.rd_rs2)?;
                 interpreter
                     .memory
-                    .store(address, &(rs2 as u16).to_le_bytes())?;
+                    .store_bytes(address, &(rs2 as u16).to_le_bytes())?;
             }
             Self::SW_FUNC => {
                 let address = (rs1 as u32).wrapping_add_signed(self.0.imm);
                 let rs2 = interpreter.registers.cpu.get(self.0.rd_rs2)?;
-                interpreter.memory.store(address, &rs2.to_le_bytes())?;
+                interpreter
+                    .memory
+                    .store_bytes(address, &rs2.to_le_bytes())?;
             }
             _ => return Err(Error::InvalidInstruction(interpreter.program_counter)),
         };

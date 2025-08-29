@@ -5,7 +5,7 @@ use log::*;
 use core::num::NonZeroI32;
 use embive::{
     interpreter::{
-        memory::{Memory, SliceMemory},
+        memory::{Memory, MemoryType, SliceMemory},
         registers::CPURegister,
         Interpreter, State, SYSCALL_ARGS,
     },
@@ -30,8 +30,8 @@ async fn syscall<M: Memory>(
         // Add two numbers (arg[0] + arg[1])
         1 => Ok(args[0] + args[1]),
         // Load from RAM (arg[0])
-        2 => match memory.load(args[0] as u32, 4) {
-            Ok(val) => Ok(i32::from_le_bytes(val.try_into().unwrap())),
+        2 => match i32::load(memory, args[0] as u32) {
+            Ok(val) => Ok(val),
             Err(_) => Err(1.try_into().unwrap()), // Error loading
         },
         _ => Err(2.try_into().unwrap()), // Not implemented

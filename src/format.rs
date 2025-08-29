@@ -607,40 +607,6 @@ impl Format for TypeCB2 {
     }
 }
 
-/// CB Format 3 (rs2)
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub struct TypeCB3 {
-    /// Destination / Source Register 1
-    pub rd_rs1: u8,
-    /// Source Register 2
-    pub rs2: u8,
-}
-
-impl Format for TypeCB3 {
-    const SIZE: Size = Size::Half;
-
-    #[inline(always)]
-    fn from_riscv(inst: u32) -> Self {
-        TypeCB3 {
-            rd_rs1: (((inst >> 7) & 0b111) as u8).wrapping_add(COMPRESSED_REGISTER_OFFSET),
-            rs2: (((inst >> 2) & 0b111) as u8).wrapping_add(COMPRESSED_REGISTER_OFFSET),
-        }
-    }
-
-    #[inline(always)]
-    fn from_embive(inst: u32) -> Self {
-        TypeCB3 {
-            rd_rs1: ((inst >> 5) & 0b1_1111) as u8,
-            rs2: ((inst >> 10) & 0b1_1111) as u8,
-        }
-    }
-
-    #[inline(always)]
-    fn to_embive(self) -> u32 {
-        ((self.rd_rs1 as u32) << 5) | ((self.rs2 as u32) << 10)
-    }
-}
-
 /// CB Format 4 (IMM\[8:1\])
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct TypeCB4 {
@@ -1087,16 +1053,6 @@ mod tests {
 
         assert_eq!(parsed.rd_rs1, 10);
         assert_eq!(parsed.imm, -23);
-    }
-
-    #[test]
-    fn test_type_cb3() {
-        let inst = 0b1000110100101101; // c.xor x10, x11
-        let parsed = TypeCB3::from_riscv(inst);
-        test_from_to(parsed);
-
-        assert_eq!(parsed.rd_rs1, 10);
-        assert_eq!(parsed.rs2, 11);
     }
 
     #[test]

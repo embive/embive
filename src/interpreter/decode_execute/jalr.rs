@@ -1,5 +1,6 @@
 use crate::instruction::embive::InstructionImpl;
 use crate::instruction::embive::Jalr;
+use crate::interpreter::utils::likely;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
 use super::Execute;
@@ -11,7 +12,7 @@ impl<M: Memory> Execute<M> for Jalr {
         let rs1 = interpreter.registers.cpu.get(self.0.rs1)?;
 
         // Load pc + instruction size into the destination register (if not unconditional).
-        if self.0.rd_rs2 != 0 {
+        if likely(self.0.rd_rs2 != 0) {
             let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
             *rd = interpreter
                 .program_counter

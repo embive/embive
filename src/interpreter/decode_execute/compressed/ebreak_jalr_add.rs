@@ -1,6 +1,7 @@
 use crate::instruction::embive::CEbreakJalrAdd;
 use crate::instruction::embive::InstructionImpl;
 use crate::interpreter::registers::CPURegister;
+use crate::interpreter::utils::unlikely;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
 use super::super::Execute;
@@ -8,8 +9,8 @@ use super::super::Execute;
 impl<M: Memory> Execute<M> for CEbreakJalrAdd {
     #[inline(always)]
     fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
-        if self.0.rs2 == 0 {
-            if self.0.rd_rs1 == 0 {
+        if unlikely(self.0.rs2 == 0) {
+            if unlikely(self.0.rd_rs1 == 0) {
                 // Ebreak
                 // Go to next instruction
                 interpreter.program_counter = interpreter

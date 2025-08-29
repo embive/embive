@@ -1,5 +1,6 @@
 use crate::instruction::embive::InstructionImpl;
 use crate::instruction::embive::OpAmo;
+use crate::interpreter::utils::likely;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
 use super::Execute;
@@ -59,7 +60,11 @@ impl<M: Memory> Execute<M> for OpAmo {
                 // Atomic operations
                 let value = i32::from_le_bytes(
                     // Unwrap is safe because the slice is guaranteed to have 4 elements.
-                    interpreter.memory.load(rs1 as u32, 4)?.try_into().unwrap(),
+                    interpreter
+                        .memory
+                        .load_bytes(rs1 as u32, 4)?
+                        .try_into()
+                        .unwrap(),
                 );
 
                 match self.0.func {
@@ -74,7 +79,7 @@ impl<M: Memory> Execute<M> for OpAmo {
                         match interpreter.memory_reservation.take() {
                             Some((addr, old_value)) => {
                                 if addr == rs1 as u32 && value == old_value {
-                                    interpreter.memory.store(addr, &rs2.to_le_bytes())?;
+                                    interpreter.memory.store_bytes(addr, &rs2.to_le_bytes())?;
                                     ret = 0;
                                 } else {
                                     // Value has changed or address is different
@@ -90,63 +95,67 @@ impl<M: Memory> Execute<M> for OpAmo {
                     }
                     Self::AMOSWAP_FUNC => {
                         // Atomic Swap (rd = mem[rs1]; mem[rs1] = rs2)
-                        interpreter.memory.store(rs1 as u32, &rs2.to_le_bytes())?;
+                        interpreter
+                            .memory
+                            .store_bytes(rs1 as u32, &rs2.to_le_bytes())?;
                         value
                     }
                     Self::AMOADD_FUNC => {
                         // Atomic Add (rd = mem[rs1]; mem[rs1] += rs2)
                         interpreter
                             .memory
-                            .store(rs1 as u32, &(value.wrapping_add(rs2)).to_le_bytes())?;
+                            .store_bytes(rs1 as u32, &(value.wrapping_add(rs2)).to_le_bytes())?;
                         value
                     }
                     Self::AMOXOR_FUNC => {
                         // Atomic Xor (rd = mem[rs1]; mem[rs1] ^= rs2)
                         interpreter
                             .memory
-                            .store(rs1 as u32, &(value ^ rs2).to_le_bytes())?;
+                            .store_bytes(rs1 as u32, &(value ^ rs2).to_le_bytes())?;
                         value
                     }
                     Self::AMOAND_FUNC => {
                         // Atomic And (rd = mem[rs1]; mem[rs1] &= rs2)
                         interpreter
                             .memory
-                            .store(rs1 as u32, &(value & rs2).to_le_bytes())?;
+                            .store_bytes(rs1 as u32, &(value & rs2).to_le_bytes())?;
                         value
                     }
                     Self::AMOOR_FUNC => {
                         // Atomic Or (rd = mem[rs1]; mem[rs1] |= rs2)
                         interpreter
                             .memory
-                            .store(rs1 as u32, &(value | rs2).to_le_bytes())?;
+                            .store_bytes(rs1 as u32, &(value | rs2).to_le_bytes())?;
                         value
                     }
                     Self::AMOMIN_FUNC => {
                         // Atomic Min (rd = mem[rs1]; mem[rs1] = min(mem[rs1], rs2))
                         interpreter
                             .memory
-                            .store(rs1 as u32, &value.min(rs2).to_le_bytes())?;
+                            .store_bytes(rs1 as u32, &value.min(rs2).to_le_bytes())?;
                         value
                     }
                     Self::AMOMAX_FUNC => {
                         // Atomic Max (rd = max(mem[rs1], rs2))
                         interpreter
                             .memory
-                            .store(rs1 as u32, &value.max(rs2).to_le_bytes())?;
+                            .store_bytes(rs1 as u32, &value.max(rs2).to_le_bytes())?;
                         value
                     }
                     Self::AMOMINU_FUNC => {
                         // Atomic Min Unsigned (rd = minu(mem[rs1], rs2))
-                        interpreter
-                            .memory
-                            .store(rs1 as u32, &(value as u32).min(rs2 as u32).to_le_bytes())?;
+                        interpreter.memory.store_bytes(
+                            rs1 as u32,
+                            &(value as u32).min(rs2 as u32).to_le_bytes(),
+                        )?;
                         value
                     }
                     Self::AMOMAXU_FUNC => {
                         // Atomic Max Unsigned (rd = maxu(mem[rs1], rs2))
-                        interpreter
-                            .memory
-                            .store(rs1 as u32, &(value as u32).max(rs2 as u32).to_le_bytes())?;
+                        interpreter.memory.store_bytes(
+                            rs1 as u32,
+                            &(value as u32).max(rs2 as u32).to_le_bytes(),
+                        )?;
                         value
                     }
                     _ => return Err(Error::InvalidInstruction(interpreter.program_counter)),
@@ -154,7 +163,7 @@ impl<M: Memory> Execute<M> for OpAmo {
             }
         };
 
-        if self.0.rd != 0 {
+        if likely(self.0.rd != 0) {
             let rd = interpreter.registers.cpu.get_mut(self.0.rd)?;
             *rd = result;
         }

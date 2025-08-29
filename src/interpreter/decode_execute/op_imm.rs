@@ -1,5 +1,6 @@
 use crate::instruction::embive::InstructionImpl;
 use crate::instruction::embive::OpImm;
+use crate::interpreter::utils::likely;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
 use super::Execute;
@@ -10,7 +11,7 @@ impl<M: Memory> Execute<M> for OpImm {
         let rs1 = interpreter.registers.cpu.get(self.0.rs1)?;
         let imm = self.0.imm;
 
-        if self.0.rd_rs2 != 0 {
+        if likely(self.0.rd_rs2 != 0) {
             // rd = 0 means its a HINT instruction, just ignore it.
             let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs2)?;
             *rd = match self.0.func {

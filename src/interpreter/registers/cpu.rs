@@ -1,5 +1,5 @@
 //! CPU Register Module
-use crate::interpreter::Error;
+use crate::interpreter::{utils::unlikely, Error};
 
 /// Number of registers available
 pub const CPU_REGISTER_COUNT: u8 = 32;
@@ -91,7 +91,7 @@ impl CPURegisters {
     /// - `Err(Error)`: The register index is out of bounds.
     #[inline]
     pub fn get(&self, index: u8) -> Result<i32, Error> {
-        if index >= CPU_REGISTER_COUNT {
+        if unlikely(index >= CPU_REGISTER_COUNT) {
             return Err(Error::InvalidCPURegister(index));
         }
 
@@ -109,7 +109,7 @@ impl CPURegisters {
     /// - `Err(Error)`: The register index is out of bounds.
     #[inline]
     pub fn get_mut(&mut self, index: u8) -> Result<&mut i32, Error> {
-        if index >= CPU_REGISTER_COUNT {
+        if unlikely(index >= CPU_REGISTER_COUNT) {
             return Err(Error::InvalidCPURegister(index));
         }
 

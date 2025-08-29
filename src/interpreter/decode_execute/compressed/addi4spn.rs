@@ -1,6 +1,7 @@
 use crate::instruction::embive::CAddi4spn;
 use crate::instruction::embive::InstructionImpl;
 use crate::interpreter::registers::CPURegister;
+use crate::interpreter::utils::unlikely;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
 use super::super::Execute;
@@ -9,7 +10,7 @@ impl<M: Memory> Execute<M> for CAddi4spn {
     #[inline(always)]
     fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
         // Check if illegal instruction
-        if self.0.imm == 0 {
+        if unlikely(self.0.imm == 0) {
             return Err(Error::IllegalInstruction(interpreter.program_counter));
         }
 

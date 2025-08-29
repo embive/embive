@@ -1,9 +1,14 @@
 //! Memory Module
 //!
 //! This module implements the memory interface for the Embive interpreter.
+mod memory_type;
+
 use core::fmt::Debug;
 
 use super::error::Error;
+
+#[doc(inline)]
+pub use memory_type::MemoryType;
 
 /// RAM address offset for default memory implementations.
 pub const RAM_OFFSET: u32 = 0x80000000;
@@ -25,7 +30,20 @@ pub trait Memory {
     /// Returns:
     /// - `Ok(&[u8])`: Bytes at the memory address.
     /// - `Err(Error)`: An error occurred. Ex.: Memory address is out of bounds.
-    fn load(&mut self, address: u32, len: u32) -> Result<&[u8], Error>;
+    fn load_bytes(&mut self, address: u32, len: usize) -> Result<&[u8], Error>;
+
+    /// Get mutable reference to `len` bytes from memory address.
+    ///
+    /// RISC-V is little-endian, always use `to_le_bytes()` and `from_le_bytes()`.
+    ///
+    /// Arguments:
+    /// - `address`: Memory address to get (only RAM).
+    /// - `len`: Number of bytes to get.
+    ///
+    /// Returns:
+    /// - `Ok(&mut [u8])`: Mutable bytes at the memory address.
+    /// - `Err(Error)`: An error occurred. Ex.: Memory address is out of bounds.
+    fn mut_bytes(&mut self, address: u32, len: usize) -> Result<&mut [u8], Error>;
 
     /// Store `len` bytes to memory address.
     ///
@@ -38,7 +56,7 @@ pub trait Memory {
     /// Returns:
     /// - `Ok(())`: Bytes were stored successfully.
     /// - `Err(Error)`: An error occurred. Ex.: Memory address is out of bounds.
-    fn store(&mut self, address: u32, data: &[u8]) -> Result<(), Error>;
+    fn store_bytes(&mut self, address: u32, data: &[u8]) -> Result<(), Error>;
 }
 
 /// A simple memory implementation using slices.
@@ -67,24 +85,36 @@ impl<'a> SliceMemory<'a> {
 
 impl Memory for SliceMemory<'_> {
     #[inline]
-    fn load(&mut self, address: u32, len: u32) -> Result<&[u8], Error> {
+    fn load_bytes(&mut self, address: u32, len: usize) -> Result<&[u8], Error> {
         // Check if the address is in RAM or code.
         if address >= RAM_OFFSET {
             // Subtract the RAM offset to get the actual address.
-            let ram_address = address.wrapping_sub(RAM_OFFSET);
+            let ram_address = address.wrapping_sub(RAM_OFFSET) as usize;
 
             self.ram
-                .get(ram_address as usize..(ram_address + len) as usize)
+                .get(ram_address..(ram_address + len))
                 .ok_or(Error::InvalidMemoryAddress(address))
         } else {
+            let code_address = address as usize;
+
             self.code
-                .get(address as usize..(address + len) as usize)
+                .get(code_address..(code_address + len))
                 .ok_or(Error::InvalidMemoryAddress(address))
         }
     }
 
     #[inline]
-    fn store(&mut self, address: u32, data: &[u8]) -> Result<(), Error> {
+    fn mut_bytes(&mut self, address: u32, len: usize) -> Result<&mut [u8], Error> {
+        // Subtract the RAM offset to get the actual address.
+        let ram_address = address.wrapping_sub(RAM_OFFSET) as usize;
+
+        self.ram
+            .get_mut(ram_address..(ram_address + len))
+            .ok_or(Error::InvalidMemoryAddress(address))
+    }
+
+    #[inline]
+    fn store_bytes(&mut self, address: u32, data: &[u8]) -> Result<(), Error> {
         // Subtract the RAM offset to get the actual address.
         let ram_address = address.wrapping_sub(RAM_OFFSET);
 
@@ -106,17 +136,44 @@ mod tests {
     pub fn load_ram() {
         let mut ram = [0x1, 0x2, 0x3, 0x4];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let result = memory.load(0x80000000, 4);
+        let result = memory.load_bytes(0x80000000, 4);
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), &[0x1, 0x2, 0x3, 0x4]);
     }
 
     #[test]
+    pub fn mut_ram() {
+        let mut ram = [0x1, 0x2, 0x3, 0x4];
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let result = memory.mut_bytes(0x80000000, 4);
+
+        assert!(result.is_ok());
+
+        let bytes = result.unwrap();
+        bytes[0] = 0x5;
+
+        assert_eq!(bytes, &mut [0x5, 0x2, 0x3, 0x4]);
+    }
+
+    #[test]
     pub fn load_out_of_ram() {
         let mut ram = [0; 2];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let result = memory.load(0x80000000, 4);
+        let result = memory.load_bytes(0x80000000, 4);
+
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            Error::InvalidMemoryAddress(_)
+        ));
+    }
+
+    #[test]
+    pub fn mut_out_of_ram() {
+        let mut ram = [0; 2];
+        let mut memory = SliceMemory::new(&[], &mut ram);
+        let result = memory.mut_bytes(0x80000000, 4);
 
         assert!(result.is_err());
         assert!(matches!(
@@ -129,7 +186,7 @@ mod tests {
     pub fn store_ram() {
         let mut ram = [0; 4];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let result = memory.store(0x80000000, &[0x1, 0x2, 0x3, 0x4]);
+        let result = memory.store_bytes(0x80000000, &[0x1, 0x2, 0x3, 0x4]);
 
         assert!(result.is_ok());
         assert_eq!(ram, [0x1, 0x2, 0x3, 0x4]);
@@ -139,7 +196,7 @@ mod tests {
     pub fn store_out_of_ram() {
         let mut ram = [0; 2];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let result = memory.store(0x80000000, &[0; 4]);
+        let result = memory.store_bytes(0x80000000, &[0; 4]);
 
         assert!(result.is_err());
         assert!(matches!(
@@ -152,17 +209,30 @@ mod tests {
     pub fn load_code() {
         let code = [0x1, 0x2, 0x3, 0x4];
         let mut memory = SliceMemory::new(&code, &mut []);
-        let result = memory.load(0x0, 4);
+        let result = memory.load_bytes(0x0, 4);
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), &[0x1, 0x2, 0x3, 0x4]);
     }
 
     #[test]
+    pub fn mut_code() {
+        let code = [0; 2];
+        let mut memory = SliceMemory::new(&code, &mut []);
+        let result = memory.mut_bytes(0x0, 4);
+
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            Error::InvalidMemoryAddress(_)
+        ));
+    }
+
+    #[test]
     pub fn store_code() {
         let code = [0; 4];
         let mut memory = SliceMemory::new(&code, &mut []);
-        let result = memory.store(0x0, &[0x1, 0x2, 0x3, 0x4]);
+        let result = memory.store_bytes(0x0, &[0x1, 0x2, 0x3, 0x4]);
 
         assert!(result.is_err());
         assert!(matches!(
@@ -175,7 +245,7 @@ mod tests {
     pub fn load_out_of_code() {
         let code = [0; 2];
         let mut memory = SliceMemory::new(&code, &mut []);
-        let result = memory.load(0x0, 4);
+        let result = memory.load_bytes(0x0, 4);
 
         assert!(result.is_err());
         assert!(matches!(

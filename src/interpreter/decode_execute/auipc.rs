@@ -1,5 +1,6 @@
 use crate::instruction::embive::Auipc;
 use crate::instruction::embive::InstructionImpl;
+use crate::interpreter::utils::likely;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
 use super::Execute;
@@ -8,7 +9,7 @@ impl<M: Memory> Execute<M> for Auipc {
     #[inline(always)]
     fn execute(&self, interpreter: &mut Interpreter<'_, M>) -> Result<State, Error> {
         // rd = 0 means its a HINT instruction, just ignore it.
-        if self.0.rd != 0 {
+        if likely(self.0.rd != 0) {
             // Load the immediate value + pc into the register.
             let reg = interpreter.registers.cpu.get_mut(self.0.rd)?;
             *reg = interpreter.program_counter.wrapping_add_signed(self.0.imm) as i32;
