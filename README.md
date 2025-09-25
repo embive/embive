@@ -7,7 +7,7 @@
 [msrv]: https://img.shields.io/crates/msrv/embive.svg?label=msrv&color=lightgray
 [Rust 1.81]: https://blog.rust-lang.org/2024/09/05/Rust-1.81.0.html
 
-A lightweight, recoverable sandbox for executing untrusted RISC-V code in constrained environments (ex.: microcontrollers).
+Embive is an interpreter/virtual-machine that leverages RISC-V bytecode, enabling sandboxed code execution on tiny devices (e.g. microcontrollers).
 
 🛡️ **Secure**: No unsafe code, no panics on release builds.  
 📦 **Embeddable**: No standard library required.  
