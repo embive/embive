@@ -58,7 +58,7 @@ mod tests {
                 panic!("Failed test number: {}", args[0] >> 1);
             }
         } else {
-            panic!("Unknown syscall: {}", nr);
+            panic!("Unknown syscall: {nr}");
         }
 
         SYSCALL_COUNTER.with(|c| *c.borrow_mut() += 1);

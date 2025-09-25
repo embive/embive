@@ -21,9 +21,9 @@ async fn syscall<M: Memory>(
     args: &[i32; SYSCALL_ARGS],
     memory: &mut M,
 ) -> Result<Result<i32, NonZeroI32>, ()> {
-    info!("Entering syscall: {}", nr);
+    info!("Entering syscall: {nr}");
     yield_now().await; // Simulate async syscall delay
-    info!("Args: {:?}", args);
+    info!("Args: {args:?}");
 
     // Match the syscall number (always succeeds)
     Ok(match nr {

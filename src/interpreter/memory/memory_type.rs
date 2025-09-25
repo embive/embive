@@ -91,7 +91,7 @@ mod tests {
     fn test_i8_load_store() {
         let mut ram = [0; 1];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         // Test storing
         let value = -42i8;
@@ -106,7 +106,7 @@ mod tests {
     fn test_u8_load_store() {
         let mut ram = [0; 1];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = 255u8;
         assert!(value.store(&mut memory, address).is_ok());
@@ -120,7 +120,7 @@ mod tests {
     fn test_i16_load_store() {
         let mut ram = [0; 2];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = -12345i16;
         assert!(value.store(&mut memory, address).is_ok());
@@ -134,7 +134,7 @@ mod tests {
     fn test_u16_load_store() {
         let mut ram = [0; 2];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = 54321u16;
         assert!(value.store(&mut memory, address).is_ok());
@@ -148,7 +148,7 @@ mod tests {
     fn test_i32_load_store() {
         let mut ram = [0; 4];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = -123456789i32;
         assert!(value.store(&mut memory, address).is_ok());
@@ -162,7 +162,7 @@ mod tests {
     fn test_u32_load_store() {
         let mut ram = [0; 4];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = 123456789u32;
         assert!(value.store(&mut memory, address).is_ok());
@@ -176,7 +176,7 @@ mod tests {
     fn test_i64_load_store() {
         let mut ram = [0; 8];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = -1234567890123456789i64;
         assert!(value.store(&mut memory, address).is_ok());
@@ -190,7 +190,7 @@ mod tests {
     fn test_u64_load_store() {
         let mut ram = [0; 8];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = 12345678901234567890u64;
         assert!(value.store(&mut memory, address).is_ok());
@@ -204,7 +204,7 @@ mod tests {
     fn test_i128_load_store() {
         let mut ram = [0; 16];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = -123456789012345678901234567890123456i128;
         assert!(value.store(&mut memory, address).is_ok());
@@ -218,7 +218,7 @@ mod tests {
     fn test_u128_load_store() {
         let mut ram = [0; 16];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = 123456789012345678901234567890123456u128;
         assert!(value.store(&mut memory, address).is_ok());
@@ -232,9 +232,9 @@ mod tests {
     fn test_f32_load_store() {
         let mut ram = [0; 4];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
-        let value = 3.1415927f32;
+        let value = core::f32::consts::PI;
         assert!(value.store(&mut memory, address).is_ok());
 
         let result = f32::load(&mut memory, address);
@@ -246,9 +246,9 @@ mod tests {
     fn test_f64_load_store() {
         let mut ram = [0; 8];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
-        let value = 2.718281828459045f64;
+        let value = core::f64::consts::E;
         assert!(value.store(&mut memory, address).is_ok());
 
         let result = f64::load(&mut memory, address);
@@ -260,7 +260,7 @@ mod tests {
     fn test_bool_load_store() {
         let mut ram = [0; 1];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = true;
         assert!(value.store(&mut memory, address).is_ok());
@@ -274,7 +274,7 @@ mod tests {
     fn test_i32_store_fail() {
         let mut ram = [0; 1];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = i32::MAX;
         assert!(value.store(&mut memory, address).is_err());
@@ -284,7 +284,7 @@ mod tests {
     fn test_i32_load_fail() {
         let mut ram = [0; 1];
         let mut memory = SliceMemory::new(&[], &mut ram);
-        let address = RAM_OFFSET as u32;
+        let address = RAM_OFFSET;
 
         let value = i32::MAX;
         assert!(value.store(&mut memory, address).is_err());

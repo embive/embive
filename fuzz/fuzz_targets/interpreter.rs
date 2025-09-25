@@ -20,18 +20,18 @@ fn syscall<M: Memory>(
 
 fuzz_target!(|data: &[u8]| {
     let mut ram = [0; RAM_SIZE];
-    let mut memory = SliceMemory::new(&data, &mut ram);
+    let mut memory = SliceMemory::new(data, &mut ram);
     let mut interpreter = Interpreter::new(&mut memory, MAX_INSTRUCTIONS);
 
     loop {
         match interpreter.run() {
             Ok(State::Called) => {
-                if let Err(_) = interpreter.syscall(&mut syscall) {
+                if interpreter.syscall(&mut syscall).is_err() {
                     break;
                 }
             }
             Ok(State::Waiting) => {
-                if let Err(_) = interpreter.interrupt(0) {
+                if interpreter.interrupt(0).is_err() {
                     break;
                 }
             }
