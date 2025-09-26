@@ -7,6 +7,8 @@ use core::fmt::{Display, Formatter, Result};
 pub enum Error {
     /// Memory address is out of bounds. The memory address is provided.
     InvalidMemoryAddress(u32),
+    /// Memory access length is invalid. The length is provided.
+    InvalidMemoryAccessLength(usize),
     /// Program counter is out of bounds. The program counter is provided.
     InvalidProgramCounter(u32),
     /// Instruction is invalid. The program counter is provided.

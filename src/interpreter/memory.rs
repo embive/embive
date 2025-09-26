@@ -3,7 +3,9 @@
 //! This module implements the memory interface for the Embive interpreter.
 mod memory_type;
 
-use core::fmt::Debug;
+use core::{fmt::Debug, ops::Range};
+
+use crate::interpreter::utils::unlikely;
 
 use super::error::Error;
 
@@ -12,6 +14,31 @@ pub use memory_type::MemoryType;
 
 /// RAM address offset for default memory implementations.
 pub const RAM_OFFSET: u32 = 0x80000000;
+
+/// A helper function to check if a slice range is valid.
+///
+/// Arguments:
+/// - `slice`: The slice to check.
+/// - `start`: The start index of the range.
+/// - `len`: The length of the range.
+///
+/// Returns:
+/// - `Ok(Range<usize>)`: The valid range.
+/// - `Err(Error)`: An error occurred. Ex.: Memory address is out of bounds.
+#[inline(always)]
+fn checked_slice_range(slice: &[u8], start: usize, len: usize) -> Result<Range<usize>, Error> {
+    // Check for overflow when calculating the end index.
+    let end = start
+        .checked_add(len)
+        .ok_or(Error::InvalidMemoryAccessLength(len))?;
+
+    // Check bounds, start is always <= end here.
+    if unlikely(end > slice.len()) {
+        return Err(Error::InvalidMemoryAddress(end as u32));
+    }
+
+    Ok(start..end)
+}
 
 /// Embive Memory Trait
 ///
@@ -90,16 +117,10 @@ impl Memory for SliceMemory<'_> {
         if address >= RAM_OFFSET {
             // Subtract the RAM offset to get the actual address.
             let ram_address = address.wrapping_sub(RAM_OFFSET) as usize;
-
-            self.ram
-                .get(ram_address..(ram_address + len))
-                .ok_or(Error::InvalidMemoryAddress(address))
+            checked_slice_range(self.ram, ram_address, len).map(|r| &self.ram[r])
         } else {
             let code_address = address as usize;
-
-            self.code
-                .get(code_address..(code_address + len))
-                .ok_or(Error::InvalidMemoryAddress(address))
+            checked_slice_range(self.code, code_address, len).map(|r| &self.code[r])
         }
     }
 
@@ -107,24 +128,16 @@ impl Memory for SliceMemory<'_> {
     fn mut_bytes(&mut self, address: u32, len: usize) -> Result<&mut [u8], Error> {
         // Subtract the RAM offset to get the actual address.
         let ram_address = address.wrapping_sub(RAM_OFFSET) as usize;
-
-        self.ram
-            .get_mut(ram_address..(ram_address + len))
-            .ok_or(Error::InvalidMemoryAddress(address))
+        checked_slice_range(self.ram, ram_address, len).map(|r| &mut self.ram[r])
     }
 
     #[inline]
     fn store_bytes(&mut self, address: u32, data: &[u8]) -> Result<(), Error> {
         // Subtract the RAM offset to get the actual address.
-        let ram_address = address.wrapping_sub(RAM_OFFSET);
-
-        let ram_slice = self
-            .ram
-            .get_mut(ram_address as usize..(ram_address as usize + data.len()))
-            .ok_or(Error::InvalidMemoryAddress(address))?;
-        ram_slice.copy_from_slice(data);
-
-        Ok(())
+        let ram_address = address.wrapping_sub(RAM_OFFSET) as usize;
+        checked_slice_range(self.ram, ram_address, data.len()).map(|r| {
+            self.ram[r].copy_from_slice(data);
+        })
     }
 }
 
