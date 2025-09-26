@@ -10,6 +10,7 @@ mod op_amo;
 mod op_imm;
 mod system_misc_mem;
 
+use crate::instruction::Instruction;
 use crate::interpreter::{memory::Memory, Error, Interpreter, State};
 
 use crate::instruction::embive::decode_instruction;
@@ -39,7 +40,7 @@ trait Execute<M: Memory> {
 #[inline(always)]
 pub fn decode_execute<M: Memory>(
     interpreter: &mut Interpreter<'_, M>,
-    data: u32,
+    data: Instruction,
 ) -> Result<State, Error> {
     match decode_instruction!(data, execute, (interpreter)) {
         Some(state) => state,

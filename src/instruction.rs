@@ -23,6 +23,7 @@ pub(crate) mod embive {
     /// This struct wraps a raw embive instruction (u32)
     /// with a custom implementation for the Debug trait.
     #[derive(Clone, Copy, PartialEq)]
+    #[repr(transparent)]
     pub struct Instruction(u32);
 
     impl From<u32> for Instruction {

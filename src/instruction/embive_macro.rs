@@ -64,9 +64,11 @@ macro_rules! instructions {
             ($inst:expr, $method:tt, $params:tt) => {
                 {
                     use crate::instruction::embive::InstructionImpl;
-                    match ($inst as u8) & 0x1F {
+                    let inst = u32::from($inst);
+
+                    match (inst & 0x1F) {
                         $(
-                            $opcode => Some(crate::instruction::embive::$name::decode($inst).$method$params),
+                            $opcode => Some(crate::instruction::embive::$name::decode(inst).$method$params),
                         )*
                         _ => None,
                     }

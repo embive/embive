@@ -14,7 +14,7 @@ mod utils;
 use core::num::NonZeroI32;
 
 use decode_execute::decode_execute;
-use memory::Memory;
+use memory::{Memory, MemoryType};
 use registers::{CPURegister, Registers};
 
 #[doc(inline)]
@@ -121,12 +121,10 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     #[inline(always)]
     pub fn step(&mut self) -> Result<State, Error> {
         // Fetch next instruction
-        let data = u32::from(self.fetch()?);
+        let data = self.fetch()?;
 
         // Decode and execute the instruction
-        let ret = decode_execute(self, data)?;
-
-        Ok(ret)
+        decode_execute(self, data)
     }
 
     /// Fetch the next instruction from the program counter.
@@ -136,9 +134,7 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     /// - `Err(Error)`: The program counter is out of bounds.
     #[inline(always)]
     pub fn fetch(&mut self) -> Result<Instruction, Error> {
-        let data = self.memory.load_bytes(self.program_counter, 4)?;
-        // Unwrap is safe because the slice is guaranteed to have 4 elements.
-        Ok(u32::from_le_bytes(data.try_into().unwrap()).into())
+        u32::load(self.memory, self.program_counter).map(Instruction::from)
     }
 
     /// Execute an interrupt as configured by the interpreted code.
@@ -178,14 +174,14 @@ impl<'a, M: Memory> Interpreter<'a, M> {
     /// Get the syscall arguments.
     #[inline(always)]
     fn syscall_arguments(&mut self) -> (i32, &[i32; SYSCALL_ARGS], &mut M) {
-        // Syscall Number
-        let nr = self.registers.cpu.inner[CPURegister::A7 as usize];
-
         // Syscall Arguments
         let args = self.registers.cpu.inner[CPURegister::A0 as usize..]
             .first_chunk()
             // Unwrap is safe because the slice is guaranteed to have more than SYSCALL_ARGS elements.
             .unwrap();
+
+        // Syscall Number
+        let nr = self.registers.cpu.inner[CPURegister::A7 as usize];
 
         (nr, args, self.memory)
     }
