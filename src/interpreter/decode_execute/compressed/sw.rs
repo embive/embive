@@ -1,6 +1,9 @@
 use crate::instruction::embive::CSw;
 use crate::instruction::embive::InstructionImpl;
-use crate::interpreter::{memory::Memory, Error, Interpreter, State};
+use crate::interpreter::{
+    memory::{Memory, MemoryType},
+    Error, Interpreter, State,
+};
 
 use super::super::Execute;
 
@@ -12,9 +15,7 @@ impl<M: Memory> Execute<M> for CSw {
         let address = (rs1 as u32).wrapping_add(self.0.imm as u32);
 
         let rs2 = interpreter.registers.cpu.get(self.0.rd_rs2)?;
-        interpreter
-            .memory
-            .store_bytes(address, &rs2.to_le_bytes())?;
+        rs2.store(interpreter.memory, address)?;
 
         // Go to next instruction
         interpreter.program_counter = interpreter

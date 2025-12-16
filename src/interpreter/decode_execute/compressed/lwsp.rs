@@ -1,7 +1,10 @@
 use crate::instruction::embive::CLwsp;
 use crate::instruction::embive::InstructionImpl;
 use crate::interpreter::registers::CPURegister;
-use crate::interpreter::{memory::Memory, Error, Interpreter, State};
+use crate::interpreter::{
+    memory::{Memory, MemoryType},
+    Error, Interpreter, State,
+};
 
 use super::super::Execute;
 
@@ -12,14 +15,7 @@ impl<M: Memory> Execute<M> for CLwsp {
         let sp = interpreter.registers.cpu.get(CPURegister::SP as u8)?;
         let address = (sp as u32).wrapping_add(self.0.imm as u32);
 
-        // Unwrap is safe because the slice is guaranteed to have 4 elements
-        let result = i32::from_le_bytes(
-            interpreter
-                .memory
-                .load_bytes(address, 4)?
-                .try_into()
-                .unwrap(),
-        );
+        let result = i32::load(interpreter.memory, address)?;
         // Store the result in the destination register
         let rd = interpreter.registers.cpu.get_mut(self.0.rd_rs1)?;
         *rd = result;

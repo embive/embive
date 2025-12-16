@@ -1,3 +1,8 @@
+//! Embassy Async Example
+//!
+//! Shows how to run the Embive interpreter in an Embassy async environment.
+//! Syscalls are implemented as async functions and interpreter yields to other tasks
+//! after an instruction limit.
 use embassy_executor::Spawner;
 use embassy_futures::yield_now;
 use log::*;

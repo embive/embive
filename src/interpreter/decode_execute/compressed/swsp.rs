@@ -1,7 +1,10 @@
 use crate::instruction::embive::CSwsp;
 use crate::instruction::embive::InstructionImpl;
 use crate::interpreter::registers::CPURegister;
-use crate::interpreter::{memory::Memory, Error, Interpreter, State};
+use crate::interpreter::{
+    memory::{Memory, MemoryType},
+    Error, Interpreter, State,
+};
 
 use super::super::Execute;
 
@@ -12,10 +15,8 @@ impl<M: Memory> Execute<M> for CSwsp {
         let sp = interpreter.registers.cpu.get(CPURegister::SP as u8)?;
         let address = (sp as u32).wrapping_add(self.0.imm as u32);
 
-        let rs2 = interpreter.registers.cpu.get_mut(self.0.rs2)?;
-        interpreter
-            .memory
-            .store_bytes(address, &rs2.to_le_bytes())?;
+        let rs2 = interpreter.registers.cpu.get(self.0.rs2)?;
+        rs2.store(interpreter.memory, address)?;
 
         // Go to next instruction
         interpreter.program_counter = interpreter

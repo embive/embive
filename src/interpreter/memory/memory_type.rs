@@ -42,14 +42,16 @@ pub trait MemoryType<'a, M: Memory>: Sized {
 macro_rules! impl_memory_type_for_number {
     ($t:ty) => {
         impl<'a, M: Memory> MemoryType<'a, M> for $t {
+            #[inline]
             fn load(memory: &'a mut M, address: u32) -> Result<Self, Error> {
                 let bytes = memory.load_bytes(address, core::mem::size_of::<$t>())?;
-
-                // Unwrap is safe because the slice is guaranteed to have the correct length
-                let array: [u8; core::mem::size_of::<$t>()] = bytes.try_into().unwrap();
+                let array: [u8; core::mem::size_of::<$t>()] = bytes
+                    .try_into()
+                    .map_err(|_| Error::InvalidMemoryAccessLength(core::mem::size_of::<$t>()))?;
                 Ok(Self::from_le_bytes(array))
             }
 
+            #[inline]
             fn store(&self, memory: &'a mut M, address: u32) -> Result<(), Error> {
                 memory.store_bytes(address, &self.to_le_bytes())
             }
@@ -71,11 +73,13 @@ impl_memory_type_for_number!(f32);
 impl_memory_type_for_number!(f64);
 
 impl<'a, M: Memory> MemoryType<'a, M> for bool {
+    #[inline]
     fn load(memory: &'a mut M, address: u32) -> Result<Self, Error> {
         let byte = u8::load(memory, address)?;
         Ok(byte != 0)
     }
 
+    #[inline]
     fn store(&self, memory: &'a mut M, address: u32) -> Result<(), Error> {
         let byte = *self as u8;
         byte.store(memory, address)

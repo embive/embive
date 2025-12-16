@@ -1,9 +1,10 @@
 //! Embive Interpreter State
 
 /// Embive Interpreter State
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub enum State {
     /// Interpreter running. Call [`super::Interpreter::run`] to continue running.
+    #[default]
     Running,
     /// Interpreter was called (syscall). Optionally call [`super::Interpreter::syscall`] to handle the syscall and then [`super::Interpreter::run`] to continue running.
     Called,
@@ -11,10 +12,4 @@ pub enum State {
     Waiting,
     /// Interpreter halted. Call [`super::Interpreter::reset`] and then [`super::Interpreter::run`] to run again.
     Halted,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self::Running
-    }
 }

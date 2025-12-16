@@ -23,8 +23,6 @@ pub enum Error {
     InterruptNotEnabled,
     /// No syscall function is set.
     NoSyscallFunction,
-    /// Custom error.
-    Custom(&'static str),
 }
 
 impl core::error::Error for Error {}
