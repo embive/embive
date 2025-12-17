@@ -1,7 +1,7 @@
 [package]
 name = "embive"
 description = "Embive is an interpreter/virtual-machine that leverages RISC-V bytecode, enabling sandboxed code execution on tiny devices (e.g. microcontrollers)."
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Daniel Stuart <daniel.stuart14@gmail.com>"]
 repository = "https://github.com/embive/embive"
 documentation = "https://docs.rs/embive"
