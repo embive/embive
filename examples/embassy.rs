@@ -5,7 +5,7 @@
 //! after an instruction limit.
 use embassy_executor::Spawner;
 use embassy_futures::yield_now;
-use log::*;
+use log::info;
 
 use core::num::NonZeroI32;
 use embive::{
@@ -18,7 +18,7 @@ use embive::{
 };
 
 // RISC-V code to transpile and execute
-const ELF_FILE: &[u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../tests/app.elf"));
+const ELF_FILE: &[u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/app.elf"));
 
 // A simple async syscall implementation
 async fn syscall<M: Memory>(

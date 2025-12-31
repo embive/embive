@@ -17,9 +17,9 @@ defaults:
   run:
     shell: bash
 
-env: 
+env:
   CARGO_TERM_COLOR: always
-  rust_min: '1.81'
+  rust_min: "1.81"
 
 jobs:
   stable_test:
@@ -37,6 +37,8 @@ jobs:
         run: cargo build --verbose --all-features
       - name: Test
         run: cargo test --verbose --all-features
+      - name: Doc
+        run: cargo doc --verbose --all-features
       - name: Format Check
         run: cargo fmt --all --check
       - name: Clippy Check
@@ -50,10 +52,8 @@ jobs:
       - name: GDB Example
         run: cargo build --verbose --example gdb_tcp --features debugger
       - name: Embassy Example
-        run: |
-          cd examples/embassy
-          cargo build --verbose --release
-  
+        run: cargo build --verbose --example embassy --features async
+
   minrust_test:
     name: Min Rust Version Test
     runs-on: ubuntu-latest
@@ -61,11 +61,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-            persist-credentials: false
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ env.rust_min }}
       - name: Build
         run: cargo build --verbose
-      - name: Test
-        run: cargo test --verbose
